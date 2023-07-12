@@ -1,35 +1,41 @@
 /* Written by Juan Pablo Gutiérrez */
-
+/*
 use rand::Rng;
 use std::cmp::Ordering;
-use std::io;
+use std::io; */
 
-const width: u32 = 20;
-const height: u32 = 60;
+const WIDTH: usize = 10;
+const HEIGHT: usize = 40;
 
 fn main() {
-    let score: u32 = 0;
+    let mut screen: [[&str; WIDTH]; HEIGHT] = [[""; WIDTH]; HEIGHT];
 
-    let a: [i32; 4] = [1, 2, 3, 4];
-   /*  let w : usize = width.parse();
-    let b: [[u32; width]; height] = [[2123], [123]]; */
+    create_screen(&mut screen);
+    display_screen(&screen);
     // Game Loop
-    loop {}
-}
+/*     loop {}
+ */}
 
-fn screen() {
-    
-    let x : usize;
-    for i in 0..=height {
-        println!("");
-        print!(" | ");
-        for j in 0..=width {
-            print!(" . ");
+fn create_screen(screen: &mut [[&str; WIDTH]; HEIGHT]) {
+    for i in 0..HEIGHT {
+        screen[i][0] = "| ";
+        for j in 1..WIDTH - 1 {
+            screen[i][j] = " . ";
         }
-        print!(" | ");
+        screen[i][WIDTH - 1] = " |";
     }
 }
 
+fn display_screen(screen: &[[&str; WIDTH]; HEIGHT]) {
+    for i in 0..HEIGHT {
+        for j in 0..WIDTH {
+            print!("{}", screen[i][j]);
+        }
+        println!();
+    }
+}
+
+/*
 fn guessing() {
     println!("Welcome to the guessing game!!");
 
@@ -61,3 +67,4 @@ fn guessing() {
         }
     }
 }
+ */
