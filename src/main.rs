@@ -4,17 +4,20 @@ use rand::Rng;
 use std::cmp::Ordering;
 use std::io; */
 
-const WIDTH: usize = 10;
+const WIDTH: usize = 12; // 2 more to account for |
 const HEIGHT: usize = 40;
 
 fn main() {
     let mut screen: [[&str; WIDTH]; HEIGHT] = [[""; WIDTH]; HEIGHT];
 
     create_screen(&mut screen);
-    display_screen(&screen);
     // Game Loop
-/*     loop {}
- */}
+    loop {
+        create_tetromino(&mut screen);
+        display_screen(&screen);
+        break;
+    }
+}
 
 fn create_screen(screen: &mut [[&str; WIDTH]; HEIGHT]) {
     for i in 0..HEIGHT {
@@ -33,6 +36,14 @@ fn display_screen(screen: &[[&str; WIDTH]; HEIGHT]) {
         }
         println!();
     }
+}
+
+fn create_tetromino(screen: &mut [[&str; WIDTH]; HEIGHT]){
+
+}
+
+fn random_tetronimo() -> i32{
+    return 5;
 }
 
 /*
