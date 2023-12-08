@@ -4,6 +4,10 @@ use rand::Rng;
 use std::cmp::Ordering;
 use std::io; */
 
+use rand::Rng;
+use std::fmt::Write;
+use std::io;
+
 const WIDTH: usize = 12; // 2 more to account for |
 const HEIGHT: usize = 40;
 
@@ -13,9 +17,9 @@ fn main() {
     create_screen(&mut screen);
     // Game Loop
     loop {
-        create_tetromino(&mut screen);
+        create_tetromino(screen);
+        processInput();
         display_screen(&screen);
-        break;
     }
 }
 
@@ -38,44 +42,71 @@ fn display_screen(screen: &[[&str; WIDTH]; HEIGHT]) {
     }
 }
 
-fn create_tetromino(screen: &mut [[&str; WIDTH]; HEIGHT]){
+fn create_tetromino(screen: [[&str; WIDTH]; HEIGHT]) {
+    let x: u32 = random_tetronimo();
 
-}
+    let mut tetromino: String = String::new();
 
-fn random_tetronimo() -> i32{
-    return 5;
-}
-
-/*
-fn guessing() {
-    println!("Welcome to the guessing game!!");
-
-    let secret_num: u32 = rand::thread_rng().gen_range(1..=100);
-
-    loop {
-        println!("Guess the number");
-
-        let mut guess: String = String::new();
-
-        io::stdin()
-            .read_line(&mut guess)
-            .expect("Failed to read line");
-
-        let guess: u32 = match guess.trim().parse() {
-            Ok(num) => num,
-            Err(_) => continue,
-        };
-
-        println!("You guessed: {guess}");
-
-        match guess.cmp(&secret_num) {
-            Ordering::Less => println!("Too small!"),
-            Ordering::Greater => println!("Too big!"),
-            Ordering::Equal => {
-                println!("You win!");
-                break;
-            }
-        }
+    if x == 1 {
+        write!(
+            tetromino,
+            " 
+[][][][]
+            "
+        )
+        .unwrap();
+        println!("{}", tetromino);
+    } else if x == 2 {
+        write!(
+            tetromino,
+            "
+[][][] 
+    []
+            "
+        )
+        .unwrap();
+        println!("{}", tetromino);
+    } else if x == 3 {
+        write!(
+            tetromino,
+            "
+[][]
+[][]
+            "
+        )
+        .unwrap();
+        println!("{}", tetromino);
+    } else if x == 4 {
+        write!(
+            tetromino,
+            "
+[][]
+  [][]
+            "
+        )
+        .unwrap();
+        println!("{}", tetromino);
+    } else if x == 5 {
+        write!(
+            tetromino,
+            "
+[][][] 
+  []
+            "
+        )
+        .unwrap();
+        println!("{}", tetromino);
     }
 }
- */
+
+fn processInput() {
+    let mut input = String::new();
+
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+}
+
+fn random_tetronimo() -> u32 {
+    return rand::thread_rng().gen_range(1..=5);
+}
