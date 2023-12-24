@@ -1,3 +1,6 @@
 # Rust Tetris
 
-Tetris port.
+Tetris port. 
+
+
+Written by Juan Pablo Gutiérrez
