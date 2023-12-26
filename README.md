@@ -1,6 +1,6 @@
 # Rust Tetris
 
-Tetris port. 
+Tetris port to learn rust
 
 
 Written by Juan Pablo Gutiérrez
