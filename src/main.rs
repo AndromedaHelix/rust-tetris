@@ -105,6 +105,8 @@ fn display_screen(
     unrendered_tetrominoes: &mut Vec<Tetromino>,
     rendered_tetrominoes: &mut Vec<Tetromino>,
 ) {
+    println!("Unrendered: {}", unrendered_tetrominoes.len());
+    println!("Rendered: {}", rendered_tetrominoes.len());
     for i in 0..HEIGHT {
         let mut j = 0;
         while j < WIDTH {
@@ -126,7 +128,7 @@ fn display_screen(
                     j += skip_distance_first;
                     found_tetromino = true;
                     if tetromino.multi_line == false {
-                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(0));
+                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
                     }
                     break;
                 } else if tetromino.multi_line == true
@@ -135,7 +137,7 @@ fn display_screen(
                     found_tetromino = true;
                     j += skip_distance_second;
                     print!("{}", tetromino.second.value);
-                    rendered_tetrominoes.push(unrendered_tetrominoes.remove(0));
+                    rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
                     break;
                 }
 
@@ -152,77 +154,6 @@ fn display_screen(
 
     unrendered_tetrominoes.append(rendered_tetrominoes);
 }
-
-//  This is the method causing the issues
-// fn display_screen(screen: &[[&str; WIDTH]; HEIGHT], tetrominoes_list: &Vec<Tetromino>) {
-//     for i in 0..HEIGHT {
-//         let mut j = 0;
-//         while j < WIDTH {
-//             let mut found_tetromino = false;
-
-//             for tetromino in tetrominoes_list {
-//                 let skip_distance_first = (tetromino.first.value.len() / 3) as usize;
-//                 let skip_distance_second = if tetromino.second.value.is_empty() {
-//                     0
-//                 } else {
-//                     (tetromino.second.value.len() / 3) as usize
-//                 };
-
-//                 if (tetromino.first.x as usize == j && tetromino.first.y as usize == i)
-//                     || (tetromino.second.x as usize == j && tetromino.second.y as usize == i)
-//                 {
-//                     if !tetromino.second.value.is_empty() && tetromino.second.value != "2" {
-//                         print!(
-//                             "{}",
-//                             if tetromino.first.y == tetromino.second.y {
-//                                 &tetromino.first.value
-//                             } else if tetromino.first.x == tetromino.second.x
-//                                 && tetromino.first.y == tetromino.second.y - 1
-//                             {
-//                                 if i == tetromino.first.y as usize {
-//                                     &tetromino.first.value
-//                                 } else {
-//                                     &tetromino.second.value
-//                                 }
-//                             } else {
-//                                 if j == tetromino.first.x as usize {
-//                                     &tetromino.first.value
-//                                 } else {
-//                                     &tetromino.second.value
-//                                 }
-//                             }
-//                         );
-//                     } else {
-//                         print!("{}", tetromino.first.value);
-//                     }
-
-//                     j += if tetromino.first.x == tetromino.second.x
-//                         && tetromino.first.y == tetromino.second.y - 1
-//                     {
-//                         if i == tetromino.first.y as usize {
-//                             skip_distance_first
-//                         } else {
-//                             skip_distance_second
-//                         }
-//                     } else if j == tetromino.first.x as usize {
-//                         skip_distance_first
-//                     } else {
-//                         skip_distance_second
-//                     };
-
-//                     found_tetromino = true;
-//                     break;
-//                 }
-//             }
-
-//             if !found_tetromino {
-//                 print!("{}", screen[i][j]);
-//                 j += 1;
-//             }
-//         }
-//         println!();
-//     }
-// }
 
 fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
     let random_number: i32 = random_tetronimo();
