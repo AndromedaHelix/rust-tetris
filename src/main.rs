@@ -3,7 +3,7 @@
 use rand::Rng;
 use std::io;
 
-const WIDTH: usize = 12; // 2 more to account for |
+const WIDTH: usize = 12; // 2 more to account for
 const HEIGHT: usize = 40;
 
 struct Line {
@@ -13,11 +13,11 @@ struct Line {
 }
 
 impl Line {
-    fn new(x: i32, y: i32, value: String) -> Line {
+    fn new(x_pos: i32, y_pos: i32, value_string: String) -> Line {
         Line {
-            x: x,
-            y: y,
-            value: value,
+            x: x_pos,
+            y: y_pos,
+            value: value_string,
         }
     }
 }
@@ -25,13 +25,15 @@ impl Line {
 struct Tetromino {
     first: Line,
     second: Line,
+    multi_line: bool,
 }
 
 impl Tetromino {
-    fn new(first: Line, second: Line) -> Tetromino {
+    fn new(first_line: Line, second_line: Line, multiple_line: bool) -> Tetromino {
         Tetromino {
-            first: first,
-            second: second,
+            first: first_line,
+            second: second_line,
+            multi_line: multiple_line,
         }
     }
 
@@ -42,26 +44,44 @@ impl Tetromino {
         self.second.x += x_units;
         self.second.y += y_units;
     }
+
+    fn blank_tetromino(x_position: i32) -> Tetromino {
+        Tetromino::new(
+            Line::new(x_position, 0, String::new()),
+            Line::new(0, 1, String::new()),
+            false,
+        )
+    }
 }
 
 fn main() {
     let mut screen: [[&str; WIDTH]; HEIGHT] = [[""; WIDTH]; HEIGHT];
-    let mut tetrominoes_list: Vec<Tetromino> = Vec::new();
+    let mut rendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
+    let mut unrendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
+
+    create_screen(&mut screen);
+    create_tetronimo(&mut unrendered_tetrominoes_list);
+    display_screen(
+        &screen,
+        &mut unrendered_tetrominoes_list,
+        &mut rendered_tetrominoes_list,
+    );
 
     let mut counter = 1;
 
-    create_screen(&mut screen);
-    create_tetronimo(&mut tetrominoes_list);
-    display_screen(&screen, &tetrominoes_list);
-
     loop {
         process_input();
-        display_screen(&screen, &tetrominoes_list);
-        update_tetrominoes(&mut tetrominoes_list);
+        update_tetrominoes(&mut unrendered_tetrominoes_list);
+        display_screen(
+            &screen,
+            &mut unrendered_tetrominoes_list,
+            &mut rendered_tetrominoes_list,
+        );
+        println!("Before: {}", unrendered_tetrominoes_list.len());
         if counter % 5 == 0 {
-            println!("{}", counter);
-            create_tetronimo(&mut tetrominoes_list);
+            create_tetronimo(&mut unrendered_tetrominoes_list);
         }
+        println!("After: {}", unrendered_tetrominoes_list.len());
         counter += 1;
 
         if counter > 20 {
@@ -72,73 +92,54 @@ fn main() {
 
 fn create_screen(screen: &mut [[&str; WIDTH]; HEIGHT]) {
     for i in 0..HEIGHT {
-        screen[i][0] = "| ";
+        screen[i][0] = "<!";
         for j in 1..WIDTH - 1 {
             screen[i][j] = " . ";
         }
-        screen[i][WIDTH - 1] = " |";
+        screen[i][WIDTH - 1] = "!>";
     }
 }
 
-fn display_screen(screen: &[[&str; WIDTH]; HEIGHT], tetrominoes_list: &Vec<Tetromino>) {
+fn display_screen(
+    screen: &[[&str; WIDTH]; HEIGHT],
+    unrendered_tetrominoes: &mut Vec<Tetromino>,
+    rendered_tetrominoes: &mut Vec<Tetromino>,
+) {
     for i in 0..HEIGHT {
         let mut j = 0;
         while j < WIDTH {
             let mut found_tetromino = false;
+            let mut x = 0;
 
-            for tetromino in tetrominoes_list {
+            while !unrendered_tetrominoes.is_empty() && x < unrendered_tetrominoes.len() {
+                let tetromino = &unrendered_tetrominoes[x];
+
                 let skip_distance_first = (tetromino.first.value.len() / 3) as usize;
-                let skip_distance_second = if tetromino.second.value.is_empty() {
+                let skip_distance_second = if tetromino.multi_line == false {
                     0
                 } else {
                     (tetromino.second.value.len() / 3) as usize
                 };
 
-                if (tetromino.first.x as usize == j && tetromino.first.y as usize == i)
-                    || (tetromino.second.x as usize == j && tetromino.second.y as usize == i)
-                {
-                    if !tetromino.second.value.is_empty() && tetromino.second.value != "2" {
-                        print!(
-                            "{}",
-                            if tetromino.first.y == tetromino.second.y {
-                                &tetromino.first.value
-                            } else if tetromino.first.x == tetromino.second.x
-                                && tetromino.first.y == tetromino.second.y - 1
-                            {
-                                if i == tetromino.first.y as usize {
-                                    &tetromino.first.value
-                                } else {
-                                    &tetromino.second.value
-                                }
-                            } else {
-                                if j == tetromino.first.x as usize {
-                                    &tetromino.first.value
-                                } else {
-                                    &tetromino.second.value
-                                }
-                            }
-                        );
-                    } else {
-                        print!("{}", tetromino.first.value);
-                    }
-
-                    j += if tetromino.first.x == tetromino.second.x
-                        && tetromino.first.y == tetromino.second.y - 1
-                    {
-                        if i == tetromino.first.y as usize {
-                            skip_distance_first
-                        } else {
-                            skip_distance_second
-                        }
-                    } else if j == tetromino.first.x as usize {
-                        skip_distance_first
-                    } else {
-                        skip_distance_second
-                    };
-
+                if tetromino.first.x as usize == j && tetromino.first.y as usize == i {
+                    print!("{}", tetromino.first.value);
+                    j += skip_distance_first;
                     found_tetromino = true;
+                    if tetromino.multi_line == false {
+                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(0));
+                    }
+                    break;
+                } else if tetromino.multi_line == true
+                    && (tetromino.second.x as usize == j && tetromino.second.y as usize == i)
+                {
+                    found_tetromino = true;
+                    j += skip_distance_second;
+                    print!("{}", tetromino.second.value);
+                    rendered_tetrominoes.push(unrendered_tetrominoes.remove(0));
                     break;
                 }
+
+                x += 1;
             }
 
             if !found_tetromino {
@@ -148,15 +149,85 @@ fn display_screen(screen: &[[&str; WIDTH]; HEIGHT], tetrominoes_list: &Vec<Tetro
         }
         println!();
     }
+
+    unrendered_tetrominoes.append(rendered_tetrominoes);
 }
+
+//  This is the method causing the issues
+// fn display_screen(screen: &[[&str; WIDTH]; HEIGHT], tetrominoes_list: &Vec<Tetromino>) {
+//     for i in 0..HEIGHT {
+//         let mut j = 0;
+//         while j < WIDTH {
+//             let mut found_tetromino = false;
+
+//             for tetromino in tetrominoes_list {
+//                 let skip_distance_first = (tetromino.first.value.len() / 3) as usize;
+//                 let skip_distance_second = if tetromino.second.value.is_empty() {
+//                     0
+//                 } else {
+//                     (tetromino.second.value.len() / 3) as usize
+//                 };
+
+//                 if (tetromino.first.x as usize == j && tetromino.first.y as usize == i)
+//                     || (tetromino.second.x as usize == j && tetromino.second.y as usize == i)
+//                 {
+//                     if !tetromino.second.value.is_empty() && tetromino.second.value != "2" {
+//                         print!(
+//                             "{}",
+//                             if tetromino.first.y == tetromino.second.y {
+//                                 &tetromino.first.value
+//                             } else if tetromino.first.x == tetromino.second.x
+//                                 && tetromino.first.y == tetromino.second.y - 1
+//                             {
+//                                 if i == tetromino.first.y as usize {
+//                                     &tetromino.first.value
+//                                 } else {
+//                                     &tetromino.second.value
+//                                 }
+//                             } else {
+//                                 if j == tetromino.first.x as usize {
+//                                     &tetromino.first.value
+//                                 } else {
+//                                     &tetromino.second.value
+//                                 }
+//                             }
+//                         );
+//                     } else {
+//                         print!("{}", tetromino.first.value);
+//                     }
+
+//                     j += if tetromino.first.x == tetromino.second.x
+//                         && tetromino.first.y == tetromino.second.y - 1
+//                     {
+//                         if i == tetromino.first.y as usize {
+//                             skip_distance_first
+//                         } else {
+//                             skip_distance_second
+//                         }
+//                     } else if j == tetromino.first.x as usize {
+//                         skip_distance_first
+//                     } else {
+//                         skip_distance_second
+//                     };
+
+//                     found_tetromino = true;
+//                     break;
+//                 }
+//             }
+
+//             if !found_tetromino {
+//                 print!("{}", screen[i][j]);
+//                 j += 1;
+//             }
+//         }
+//         println!();
+//     }
+// }
 
 fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
     let random_number: i32 = random_tetronimo();
     let x_position: i32 = random_tetromino_position();
-    let mut tetromino_shape: Tetromino = Tetromino::new(
-        Line::new(x_position, 0, String::new()),
-        Line::new(0, 1, String::new()),
-    );
+    let mut tetromino_shape: Tetromino = Tetromino::blank_tetromino(x_position);
 
     match random_number {
         1 => {
@@ -166,21 +237,25 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
             tetromino_shape.first.value.push_str("[ ][ ][ ]");
             tetromino_shape.second.value.push_str("[ ]");
             tetromino_shape.second.x = x_position + 2;
+            tetromino_shape.multi_line = true;
         }
         3 => {
             tetromino_shape.first.value.push_str("[ ][ ]");
             tetromino_shape.second.value.push_str("[ ][ ]");
             tetromino_shape.second.x = x_position;
+            tetromino_shape.multi_line = true;
         }
         4 => {
             tetromino_shape.first.value.push_str("[ ][ ]");
             tetromino_shape.second.value.push_str("[ ][ ]");
             tetromino_shape.second.x = x_position + 1;
+            tetromino_shape.multi_line = true;
         }
         5 => {
             tetromino_shape.first.value.push_str("[ ][ ][ ]");
             tetromino_shape.second.value.push_str("[ ]");
             tetromino_shape.second.x = x_position + 1;
+            tetromino_shape.multi_line = true;
         }
         _ => panic!("Invalid tetromino shape"),
     }
@@ -196,7 +271,6 @@ fn update_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>) {
 
 fn process_input() {
     let mut input: String = String::new();
-
     io::stdin()
         .read_line(&mut input)
         .expect("Failed to read line");
