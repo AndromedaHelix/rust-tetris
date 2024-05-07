@@ -1,7 +1,15 @@
 /* Written by Juan Pablo Gutiérrez */
 
 use rand::Rng;
-use std::io;
+use std::io::Read;
+
+extern crate termion;
+use std::io::{stdout, Write};
+use termion::raw::IntoRawMode;
+use termion::{async_stdin, clear};
+
+use std::thread;
+use std::time::Duration;
 
 const WIDTH: usize = 12; // 2 more to account for
 const HEIGHT: usize = 40;
@@ -61,32 +69,77 @@ fn main() {
 
     create_screen(&mut screen);
     create_tetronimo(&mut unrendered_tetrominoes_list);
+
+    let mut stdout = stdout().into_raw_mode().unwrap();
+    let mut stdin = async_stdin().bytes();
+
+    let mut creation_counter = 1;
+    let mut movement_counter = 1;
+
+    writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
+
     display_screen(
         &screen,
         &mut unrendered_tetrominoes_list,
         &mut rendered_tetrominoes_list,
+        &mut stdout,
     );
 
-    let mut counter = 1;
-
     loop {
-        process_input();
-        update_tetrominoes(&mut unrendered_tetrominoes_list);
+        write!(stdout, "{}", termion::clear::CurrentLine).unwrap();
+
+        let b = stdin.next();
+
+        //write!(stdout, "\r{:?}    <- This demonstrates the async read input char. Between each update a 100 ms. is waited, simply to demonstrate the async fashion. \n\r", b).unwrap();
+        if let Some(Ok(b'q')) = b {
+            break;
+        }
+        if let Some(Ok(b'a')) = b {
+            move_tetrmonioes(&mut unrendered_tetrominoes_list, -1);
+            display_screen(
+                &screen,
+                &mut unrendered_tetrominoes_list,
+                &mut rendered_tetrominoes_list,
+                &mut stdout,
+            );
+        }
+        if let Some(Ok(b'd')) = b {
+            move_tetrmonioes(&mut unrendered_tetrominoes_list, 1);
+            display_screen(
+                &screen,
+                &mut unrendered_tetrominoes_list,
+                &mut rendered_tetrominoes_list,
+                &mut stdout,
+            );
+        }
+
+        thread::sleep(Duration::from_millis(100));
+
+        if creation_counter % 70 == 0 {
+            create_tetronimo(&mut unrendered_tetrominoes_list);
+        }
+        creation_counter += 1;
+
+        if movement_counter % 5 == 0 {
+            update_tetrominoes(&mut unrendered_tetrominoes_list);
+        }
+        movement_counter += 1;
+
         display_screen(
             &screen,
             &mut unrendered_tetrominoes_list,
             &mut rendered_tetrominoes_list,
+            &mut stdout,
         );
-        println!("Before: {}", unrendered_tetrominoes_list.len());
-        if counter % 5 == 0 {
-            create_tetronimo(&mut unrendered_tetrominoes_list);
-        }
-        println!("After: {}", unrendered_tetrominoes_list.len());
-        counter += 1;
 
-        if counter > 20 {
-            break;
-        }
+        display_screen(
+            &screen,
+            &mut unrendered_tetrominoes_list,
+            &mut rendered_tetrominoes_list,
+            &mut stdout,
+        );
+
+        stdout.flush().unwrap();
     }
 }
 
@@ -104,9 +157,10 @@ fn display_screen(
     screen: &[[&str; WIDTH]; HEIGHT],
     unrendered_tetrominoes: &mut Vec<Tetromino>,
     rendered_tetrominoes: &mut Vec<Tetromino>,
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
 ) {
-    println!("Unrendered: {}", unrendered_tetrominoes.len());
-    println!("Rendered: {}", rendered_tetrominoes.len());
+    writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
+
     for i in 0..HEIGHT {
         let mut j = 0;
         while j < WIDTH {
@@ -124,7 +178,7 @@ fn display_screen(
                 };
 
                 if tetromino.first.x as usize == j && tetromino.first.y as usize == i {
-                    print!("{}", tetromino.first.value);
+                    write!(stdout, "{}", tetromino.first.value).unwrap();
                     j += skip_distance_first;
                     found_tetromino = true;
                     if tetromino.multi_line == false {
@@ -136,7 +190,7 @@ fn display_screen(
                 {
                     found_tetromino = true;
                     j += skip_distance_second;
-                    print!("{}", tetromino.second.value);
+                    write!(stdout, "{}", tetromino.second.value).unwrap();
                     rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
                     break;
                 }
@@ -145,11 +199,11 @@ fn display_screen(
             }
 
             if !found_tetromino {
-                print!("{}", screen[i][j]);
+                write!(stdout, "{}", screen[i][j]).unwrap();
                 j += 1;
             }
         }
-        println!();
+        write!(stdout, "\n\r").unwrap();
     }
 
     unrendered_tetrominoes.append(rendered_tetrominoes);
@@ -194,17 +248,16 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
     tetrominoes_list.push(tetromino_shape);
 }
 
+fn move_tetrmonioes(tetrominoes_list: &mut Vec<Tetromino>, movement: i32) {
+    for tetromino in tetrominoes_list {
+        tetromino.move_tetromino(movement, 0);
+    }
+}
+
 fn update_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>) {
     for tetromino in tetrominoes_list {
         tetromino.move_tetromino(0, 1);
     }
-}
-
-fn process_input() {
-    let mut input: String = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
 }
 
 fn random_tetronimo() -> i32 {
