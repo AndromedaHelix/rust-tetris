@@ -16,6 +16,7 @@ const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
 
 /* Tetromino */
+/// Represents a Tetromino character '[ ]' with its x and y position (Simulates a pixel)
 struct TetrominoCharacter {
     x: i32,
     y: i32,
@@ -46,6 +47,7 @@ impl Line {
         }
     }
 
+    /// Creates a list of TetrominoCharacter based on the given x and y position and the number of characterss
     fn create_characters(x_pos: i32, y_pos: i32, num: i32) -> Vec<TetrominoCharacter> {
         let mut characters: Vec<TetrominoCharacter> = Vec::new();
 
@@ -60,6 +62,7 @@ impl Line {
         characters
     }
 
+    /// Moves the line with its characters by the given x and y unitss
     fn move_line(&mut self, x_units: i32, y_units: i32) {
         self.x += x_units;
         self.y += y_units;
