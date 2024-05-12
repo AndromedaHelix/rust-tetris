@@ -69,18 +69,6 @@ impl Line {
             character.y += y_units;
         }
     }
-
-    // fn count_characters(&mut self) -> usize {
-    //     let mut count = 0;
-    //     let mut start_index = 0;
-
-    //     while let Some(index) = &self.value[..].find("[ ]") {
-    //         count += 1;
-    //         start_index += index + "[ ]".len();
-    //     }
-
-    //     count
-    // }
 }
 
 struct Tetromino {
@@ -139,27 +127,31 @@ impl Tetromino {
     ///
     /// # Returns
     ///
-    /// A tuple containing a boolean indicating if the tetromino collides with the game borders and a vector of tuples containing the x and y colliding positions
+    /// A boolean indicating if the tetromino collides with the game borders
     fn collides(&mut self, game_borders: &Vec<Vec<bool>>) -> bool {
         let mut collides: bool = false;
 
-        // Iterates through the game borders
+        // Iterates through the y axis
         for y in 1..game_borders.len() - 1 {
-            // Checks if the fourth line is between the X coordinate [to reduce processing]
-            // And if the fourth line is empty (as it is not always used)
-
+            // Checks if the fourth line is empty (as it is not always used)
             if !self.fourth.to_string().is_empty() {
+                // Iterates through the characters of the fourth line's characters
                 for character in &self.fourth.characters {
+                    // Iterates through the x axis
                     for x in 1..game_borders[y].len() {
+                        // Checks if the characters X coordinate is the same as the game border's X coordinate, and if the game border at the fourth line's Y coordinate is true
                         if character.x == x as i32
                             && game_borders[(self.fourth.y + 1) as usize][x] == true
                         {
+                            // collides is set to true
                             collides = true;
+                            return collides;
                         }
                     }
                 }
             }
 
+            // Apply the same process for the rest of the lines
             if !self.third.to_string().is_empty() {
                 for character in &self.third.characters {
                     for x in 1..game_borders[y].len() {
@@ -167,6 +159,7 @@ impl Tetromino {
                             && game_borders[(self.third.y + 1) as usize][x] == true
                         {
                             collides = true;
+                            return collides;
                         }
                     }
                 }
@@ -179,17 +172,20 @@ impl Tetromino {
                             && game_borders[(self.second.y + 1) as usize][x] == true
                         {
                             collides = true;
+                            return collides;
                         }
                     }
                 }
             }
 
+            // As the first line is always used, skip the check if it is empty
             for character in &self.first.characters {
                 for x in 1..game_borders[y].len() {
                     if character.x == x as i32
                         && game_borders[(self.first.y + 1) as usize][x] == true
                     {
                         collides = true;
+                        return collides;
                     }
                 }
             }
@@ -229,7 +225,7 @@ impl Tetromino {
         self.fourth.characters.clear();
     }
 
-    fn rotate(&mut self, rotation: i32) {
+    fn rotate(&mut self, rotation: i32, game_borders: &Vec<Vec<bool>>) {
         if self.stationary {
             return;
         }
@@ -249,9 +245,19 @@ impl Tetromino {
             return;
         }
 
+        let past_rotation = self.rotation;
         self.rotation = new_rotation;
 
-        match self.rotation {
+        self.rotate_shape(self.rotation);
+
+        if self.collides(game_borders) {
+            self.rotation = past_rotation;
+            self.rotate_shape(self.rotation);
+        }
+    }
+
+    fn rotate_shape(&mut self, rotation: i32) {
+        match rotation {
             90 => match self.shape_type {
                 1 => {
                     self.clear();
@@ -386,10 +392,10 @@ fn main() {
     let mut unrendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
 
     let mut game_borders: Vec<Vec<bool>> = vec![vec![false; WIDTH]; HEIGHT + 1];
-    for x in 0..WIDTH{
+    for x in 0..WIDTH {
         game_borders[HEIGHT][x] = true;
     }
-    
+
     create_screen(&mut screen);
     create_tetronimo(&mut unrendered_tetrominoes_list);
 
@@ -404,7 +410,6 @@ fn main() {
         &mut unrendered_tetrominoes_list,
         &mut rendered_tetrominoes_list,
         &mut stdout,
-        &game_borders,
     );
 
     loop {
@@ -423,7 +428,6 @@ fn main() {
                 &mut unrendered_tetrominoes_list,
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
-                &game_borders,
             );
         }
         if let Some(Ok(b'd')) = b {
@@ -433,17 +437,15 @@ fn main() {
                 &mut unrendered_tetrominoes_list,
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
-                &game_borders,
             );
         }
         if let Some(Ok(b'r')) = b {
-            rotate_tetrominoes(&mut unrendered_tetrominoes_list, 90);
+            rotate_tetrominoes(&mut unrendered_tetrominoes_list, 90, &game_borders);
             display_screen(
                 &screen,
                 &mut unrendered_tetrominoes_list,
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
-                &game_borders,
             );
         }
 
@@ -472,7 +474,6 @@ fn main() {
             &mut unrendered_tetrominoes_list,
             &mut rendered_tetrominoes_list,
             &mut stdout,
-            &game_borders,
         );
 
         stdout.flush().unwrap();
@@ -494,7 +495,6 @@ fn display_screen(
     unrendered_tetrominoes: &mut Vec<Tetromino>,
     rendered_tetrominoes: &mut Vec<Tetromino>,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
-    game_borders: &Vec<Vec<bool>>,
 ) {
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
 
@@ -594,15 +594,6 @@ fn display_screen(
         write!(stdout, "\n\r").unwrap();
     }
 
-    //Write the game borders
-    // for y in 0..game_borders.len() {
-    //     for x in 0..game_borders[y].len() {
-    //         write!(stdout, "{} ", game_borders[y][x]).unwrap();
-    //     }
-    // }
-
-    // write!(stdout, "\n\r").unwrap();
-
     unrendered_tetrominoes.append(rendered_tetrominoes);
 }
 
@@ -669,9 +660,13 @@ fn move_tetrmonioes(
     }
 }
 
-fn rotate_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>, rotation: i32) {
+fn rotate_tetrominoes(
+    tetrominoes_list: &mut Vec<Tetromino>,
+    rotation: i32,
+    game_borders: &Vec<Vec<bool>>,
+) {
     for tetromino in tetrominoes_list {
-        tetromino.rotate(rotation);
+        tetromino.rotate(rotation, game_borders);
         print!("{}", tetromino.rotation.to_string());
     }
 }
