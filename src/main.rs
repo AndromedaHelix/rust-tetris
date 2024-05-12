@@ -108,7 +108,7 @@ impl Tetromino {
         }
     }
 
-    fn move_tetromino(&mut self, x_units: i32, y_units: i32, game_borders: &mut Vec<usize>) {
+    fn move_tetromino(&mut self, x_units: i32, y_units: i32, game_borders: &mut Vec<Vec<bool>>) {
         let collides: bool = self.collides(&game_borders);
 
         if self.stationary {
@@ -140,35 +140,57 @@ impl Tetromino {
     /// # Returns
     ///
     /// A tuple containing a boolean indicating if the tetromino collides with the game borders and a vector of tuples containing the x and y colliding positions
-    fn collides(&mut self, game_borders: &Vec<usize>) -> bool {
+    fn collides(&mut self, game_borders: &Vec<Vec<bool>>) -> bool {
         let mut collides: bool = false;
 
         // Iterates through the game borders
-        for x in 1..game_borders.len() - 1 {
+        for y in 1..game_borders.len() - 1 {
             // Checks if the fourth line is between the X coordinate [to reduce processing]
             // And if the fourth line is empty (as it is not always used)
 
-            for character in &self.fourth.characters {
-                if character.x == x as i32 && game_borders[x] == (self.fourth.y + 1) as usize {
-                    collides = true;
+            if !self.fourth.to_string().is_empty() {
+                for character in &self.fourth.characters {
+                    for x in 1..game_borders[y].len() {
+                        if character.x == x as i32
+                            && game_borders[(self.fourth.y + 1) as usize][x] == true
+                        {
+                            collides = true;
+                        }
+                    }
                 }
             }
 
-            for character in &self.third.characters {
-                if character.x == x as i32 && game_borders[x] == (self.third.y + 1) as usize {
-                    collides = true;
+            if !self.third.to_string().is_empty() {
+                for character in &self.third.characters {
+                    for x in 1..game_borders[y].len() {
+                        if character.x == x as i32
+                            && game_borders[(self.third.y + 1) as usize][x] == true
+                        {
+                            collides = true;
+                        }
+                    }
                 }
             }
 
-            for character in &self.second.characters {
-                if character.x == x as i32 && game_borders[x] == (self.second.y + 1) as usize {
-                    collides = true;
+            if !self.second.to_string().is_empty() {
+                for character in &self.second.characters {
+                    for x in 1..game_borders[y].len() {
+                        if character.x == x as i32
+                            && game_borders[(self.second.y + 1) as usize][x] == true
+                        {
+                            collides = true;
+                        }
+                    }
                 }
             }
 
             for character in &self.first.characters {
-                if character.x == x as i32 && game_borders[x] == (self.first.y + 1) as usize {
-                    collides = true;
+                for x in 1..game_borders[y].len() {
+                    if character.x == x as i32
+                        && game_borders[(self.first.y + 1) as usize][x] == true
+                    {
+                        collides = true;
+                    }
                 }
             }
         }
@@ -176,27 +198,27 @@ impl Tetromino {
         return collides;
     }
 
-    fn remake_gameborders(&mut self, game_borders: &mut Vec<usize>) {
+    fn remake_gameborders(&mut self, game_borders: &mut Vec<Vec<bool>>) {
         if !self.fourth.to_string().is_empty() {
             for fourth_character in &self.fourth.characters {
-                game_borders[fourth_character.x as usize] = (fourth_character.y) as usize;
+                game_borders[fourth_character.y as usize][fourth_character.x as usize] = true;
             }
         }
 
         if !self.third.to_string().is_empty() {
             for third_character in &self.third.characters {
-                game_borders[third_character.x as usize] = (third_character.y) as usize;
+                game_borders[third_character.y as usize][third_character.x as usize] = true;
             }
         }
 
         if !self.second.to_string().is_empty() {
             for second_character in &self.second.characters {
-                game_borders[second_character.x as usize] = (second_character.y) as usize;
+                game_borders[second_character.y as usize][second_character.x as usize] = true;
             }
         }
 
         for first_character in &self.first.characters {
-            game_borders[first_character.x as usize] = (first_character.y) as usize;
+            game_borders[first_character.y as usize][first_character.x as usize] = true;
         }
     }
 
@@ -363,15 +385,17 @@ fn main() {
     let mut rendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
     let mut unrendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
 
-    let mut game_borders: [usize; WIDTH] = [HEIGHT; WIDTH];
-
+    let mut game_borders: Vec<Vec<bool>> = vec![vec![false; WIDTH]; HEIGHT + 1];
+    for x in 0..WIDTH{
+        game_borders[HEIGHT][x] = true;
+    }
+    
     create_screen(&mut screen);
     create_tetronimo(&mut unrendered_tetrominoes_list);
 
     let mut stdout = stdout().into_raw_mode().unwrap();
     let mut stdin = async_stdin().bytes();
 
-    let mut creation_counter = 1;
     let mut movement_counter = 1;
 
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
@@ -392,13 +416,7 @@ fn main() {
             break;
         }
         if let Some(Ok(b'a')) = b {
-            let vec: Vec<usize> = move_tetrmonioes(
-                &mut unrendered_tetrominoes_list,
-                -1,
-                game_borders.to_vec(),
-            );
-
-            game_borders.copy_from_slice(&vec);
+            move_tetrmonioes(&mut unrendered_tetrominoes_list, -1, &mut game_borders);
 
             display_screen(
                 &screen,
@@ -409,11 +427,7 @@ fn main() {
             );
         }
         if let Some(Ok(b'd')) = b {
-            let vec: Vec<usize> = move_tetrmonioes(
-                &mut unrendered_tetrominoes_list,
-                1,
-                game_borders.to_vec(),
-            );
+            move_tetrmonioes(&mut unrendered_tetrominoes_list, 1, &mut game_borders);
             display_screen(
                 &screen,
                 &mut unrendered_tetrominoes_list,
@@ -421,8 +435,6 @@ fn main() {
                 &mut stdout,
                 &game_borders,
             );
-
-            game_borders.copy_from_slice(&vec);
         }
         if let Some(Ok(b'r')) = b {
             rotate_tetrominoes(&mut unrendered_tetrominoes_list, 90);
@@ -437,7 +449,7 @@ fn main() {
 
         thread::sleep(Duration::from_millis(100));
 
-        let mut create : bool = true;
+        let mut create: bool = true;
 
         for tetromino in &unrendered_tetrominoes_list {
             if !tetromino.stationary {
@@ -450,15 +462,8 @@ fn main() {
             create_tetronimo(&mut unrendered_tetrominoes_list);
         }
 
-        creation_counter += 1;
-
         if movement_counter % 2 == 0 {
-            let vec: Vec<usize> = update_tetrominoes(
-                &mut unrendered_tetrominoes_list,
-                game_borders.to_vec(),
-            );
-
-            game_borders.copy_from_slice(&vec);
+            update_tetrominoes(&mut unrendered_tetrominoes_list, &mut game_borders);
         }
         movement_counter += 1;
 
@@ -489,7 +494,7 @@ fn display_screen(
     unrendered_tetrominoes: &mut Vec<Tetromino>,
     rendered_tetrominoes: &mut Vec<Tetromino>,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
-    game_borders: &[usize; WIDTH],
+    game_borders: &Vec<Vec<bool>>,
 ) {
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
 
@@ -589,9 +594,11 @@ fn display_screen(
         write!(stdout, "\n\r").unwrap();
     }
 
-    // Write the game borders
-    // for x in 0..game_borders.len() {
-    //     write!(stdout, "{} ", game_borders[x]).unwrap();
+    //Write the game borders
+    // for y in 0..game_borders.len() {
+    //     for x in 0..game_borders[y].len() {
+    //         write!(stdout, "{} ", game_borders[y][x]).unwrap();
+    //     }
     // }
 
     // write!(stdout, "\n\r").unwrap();
@@ -655,13 +662,11 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
 fn move_tetrmonioes(
     tetrominoes_list: &mut Vec<Tetromino>,
     movement: i32,
-    mut game_borders: Vec<usize>,
-) -> Vec<usize> {
+    game_borders: &mut Vec<Vec<bool>>,
+) {
     for tetromino in tetrominoes_list {
-        tetromino.move_tetromino(movement, 0, &mut game_borders);
+        tetromino.move_tetromino(movement, 0, game_borders);
     }
-
-    return game_borders;
 }
 
 fn rotate_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>, rotation: i32) {
@@ -671,15 +676,10 @@ fn rotate_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>, rotation: i32) {
     }
 }
 
-fn update_tetrominoes(
-    tetrominoes_list: &mut Vec<Tetromino>,
-    mut game_borders: Vec<usize>,
-) -> Vec<usize> {
+fn update_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>, game_borders: &mut Vec<Vec<bool>>) {
     for tetromino in tetrominoes_list {
-        tetromino.move_tetromino(0, 1, &mut game_borders);
+        tetromino.move_tetromino(0, 1, game_borders);
     }
-
-    return game_borders;
 }
 
 /* Random helper methods */
