@@ -99,8 +99,13 @@ impl Tetromino {
         }
     }
 
-    fn move_tetromino(&mut self, x_units: i32, y_units: i32, game_borders: &mut Vec<Vec<bool>>) {
-        let collides: bool = self.collides(&game_borders);
+    fn move_tetromino(
+        &mut self,
+        x_units: i32,
+        y_units: i32,
+        game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
+    ) {
+        let collides: bool = self.collides(game_borders);
 
         if self.stationary {
             return;
@@ -131,7 +136,7 @@ impl Tetromino {
     /// # Returns
     ///
     /// A boolean indicating if the tetromino collides with the game borders
-    fn collides(&mut self, game_borders: &Vec<Vec<bool>>) -> bool {
+    fn collides(&mut self, game_borders: &mut [[bool; WIDTH]; HEIGHT + 1]) -> bool {
         let mut collides: bool = false;
 
         // Iterates through the y axis
@@ -197,7 +202,7 @@ impl Tetromino {
         return collides;
     }
 
-    fn remake_gameborders(&mut self, game_borders: &mut Vec<Vec<bool>>) {
+    fn remake_gameborders(&mut self, game_borders: &mut [[bool; WIDTH]; HEIGHT + 1]) {
         if !self.fourth.to_string().is_empty() {
             for fourth_character in &self.fourth.characters {
                 game_borders[fourth_character.y as usize][fourth_character.x as usize] = true;
@@ -228,7 +233,7 @@ impl Tetromino {
         self.fourth.characters.clear();
     }
 
-    fn rotate(&mut self, rotation: i32, game_borders: &Vec<Vec<bool>>) {
+    fn rotate(&mut self, rotation: i32, game_borders: &mut [[bool; WIDTH]; HEIGHT + 1]) {
         if self.stationary {
             return;
         }
@@ -394,10 +399,12 @@ fn main() {
     let mut rendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
     let mut unrendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
 
-    let mut game_borders: Vec<Vec<bool>> = vec![vec![false; WIDTH]; HEIGHT + 1];
+    let mut game_borders: [[bool; WIDTH]; HEIGHT + 1] = [[false; WIDTH]; HEIGHT + 1];
     for x in 0..WIDTH {
         game_borders[HEIGHT][x] = true;
     }
+
+    let mut built_tetrominoes: Vec<Vec<TetrominoCharacter>> = Vec::new();
 
     create_screen(&mut screen);
     create_tetronimo(&mut unrendered_tetrominoes_list);
@@ -443,7 +450,7 @@ fn main() {
             );
         }
         if let Some(Ok(b'r')) = b {
-            rotate_tetrominoes(&mut unrendered_tetrominoes_list, 90, &game_borders);
+            rotate_tetrominoes(&mut unrendered_tetrominoes_list, 90, &mut game_borders);
             display_screen(
                 &screen,
                 &mut unrendered_tetrominoes_list,
@@ -656,7 +663,7 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
 fn move_tetrmonioes(
     tetrominoes_list: &mut Vec<Tetromino>,
     movement: i32,
-    game_borders: &mut Vec<Vec<bool>>,
+    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
 ) {
     for tetromino in tetrominoes_list {
         tetromino.move_tetromino(movement, 0, game_borders);
@@ -666,7 +673,7 @@ fn move_tetrmonioes(
 fn rotate_tetrominoes(
     tetrominoes_list: &mut Vec<Tetromino>,
     rotation: i32,
-    game_borders: &Vec<Vec<bool>>,
+    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
 ) {
     for tetromino in tetrominoes_list {
         tetromino.rotate(rotation, game_borders);
@@ -674,7 +681,10 @@ fn rotate_tetrominoes(
     }
 }
 
-fn update_tetrominoes(tetrominoes_list: &mut Vec<Tetromino>, game_borders: &mut Vec<Vec<bool>>) {
+fn update_tetrominoes(
+    tetrominoes_list: &mut Vec<Tetromino>,
+    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
+) {
     for tetromino in tetrominoes_list {
         tetromino.move_tetromino(0, 1, game_borders);
     }
