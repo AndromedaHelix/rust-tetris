@@ -404,7 +404,7 @@ fn main() {
         game_borders[HEIGHT][x] = true;
     }
 
-    let mut built_tetrominoes: Vec<Vec<TetrominoCharacter>> = Vec::new();
+    let mut built_tetrominoes: [[bool; WIDTH]; HEIGHT] = [[false; WIDTH]; HEIGHT];
 
     create_screen(&mut screen);
     create_tetronimo(&mut unrendered_tetrominoes_list);
