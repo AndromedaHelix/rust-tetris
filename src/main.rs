@@ -5,6 +5,8 @@ use std::io::Read;
 
 extern crate termion;
 use std::io::{stdout, Write};
+use std::process::exit;
+use std::ptr::null;
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear};
 
@@ -17,10 +19,34 @@ const HEIGHT: usize = 40;
 
 /* Tetromino */
 /// Represents a Tetromino character '[ ]' with its x and y position (Simulates a pixel)
+#[derive(Copy, Clone)]
 struct TetrominoCharacter {
     x: i32,
     y: i32,
     value: &'static str, // Use &'static str for string literals
+}
+
+impl TetrominoCharacter {
+    fn new(x_pos: i32, y_pos: i32, value: &'static str) -> TetrominoCharacter {
+        TetrominoCharacter {
+            x: x_pos,
+            y: y_pos,
+            value,
+        }
+    }
+
+    fn default() -> Self {
+        TetrominoCharacter {
+            x: 0,
+            y: 0,
+            value: "", // Default value, replace with actual default if needed
+        }
+    }
+
+    fn move_character(&mut self, x_units: i32, y_units: i32) {
+        self.x += x_units;
+        self.y += y_units;
+    }
 }
 
 struct Line {
@@ -68,8 +94,7 @@ impl Line {
         self.y += y_units;
 
         for character in &mut self.characters {
-            character.x += x_units;
-            character.y += y_units;
+            character.move_character(x_units, y_units);
         }
     }
 }
@@ -404,7 +429,17 @@ fn main() {
         game_borders[HEIGHT][x] = true;
     }
 
-    let mut built_tetrominoes: [[bool; WIDTH]; HEIGHT] = [[false; WIDTH]; HEIGHT];
+    // When the tetrominoes' stationary state is reached, they are added to the built_tetrominoes array
+    // and removed from the unredered_tetrominoes_list
+    //
+    // The built_tetrominoes array is used to check for collisions with the tetrominoes that have already
+    // been built. Also, the built_tetrominoes array is used to render the tetrominoes that have already
+    // been built and to handle the scoring system.
+    //
+    // Also helps in reducing the number of computations per second needed to render moving tetrominoes as the unredered_tetrominoes_list reduces in size
+
+    let mut built_tetrominoes: [[TetrominoCharacter; WIDTH]; HEIGHT] =
+        [[TetrominoCharacter::default(); WIDTH]; HEIGHT];
 
     create_screen(&mut screen);
     create_tetronimo(&mut unrendered_tetrominoes_list);
@@ -420,6 +455,7 @@ fn main() {
         &mut unrendered_tetrominoes_list,
         &mut rendered_tetrominoes_list,
         &mut stdout,
+        &built_tetrominoes,
     );
 
     loop {
@@ -438,6 +474,7 @@ fn main() {
                 &mut unrendered_tetrominoes_list,
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
+                &built_tetrominoes,
             );
         }
         if let Some(Ok(b'd')) = b {
@@ -447,6 +484,7 @@ fn main() {
                 &mut unrendered_tetrominoes_list,
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
+                &built_tetrominoes,
             );
         }
         if let Some(Ok(b'r')) = b {
@@ -456,6 +494,7 @@ fn main() {
                 &mut unrendered_tetrominoes_list,
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
+                &built_tetrominoes,
             );
         }
 
@@ -484,7 +523,17 @@ fn main() {
             &mut unrendered_tetrominoes_list,
             &mut rendered_tetrominoes_list,
             &mut stdout,
+            &built_tetrominoes,
         );
+        move_to_built(&mut unrendered_tetrominoes_list, &mut built_tetrominoes);
+
+        let x = check_complete_line(&mut built_tetrominoes);
+
+        if x == true {
+            exit(1);
+        }
+
+        writeln!(stdout, "Complete : {}", x).unwrap();
 
         stdout.flush().unwrap();
     }
@@ -505,6 +554,7 @@ fn display_screen(
     unrendered_tetrominoes: &mut Vec<Tetromino>,
     rendered_tetrominoes: &mut Vec<Tetromino>,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    built_tetroinoes: &[[TetrominoCharacter; WIDTH]; HEIGHT],
 ) {
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
 
@@ -513,6 +563,12 @@ fn display_screen(
         while j < WIDTH {
             let mut found_tetromino = false;
             let mut x = 0;
+
+            if built_tetroinoes[i][j].x == j as i32 && built_tetroinoes[i][j].y == i as i32 {
+                write!(stdout, "{}", built_tetroinoes[i][j].value).unwrap();
+                j += 1;
+                continue;
+            }
 
             while !unrendered_tetrominoes.is_empty() && x < unrendered_tetrominoes.len() {
                 let tetromino = &unrendered_tetrominoes[x];
@@ -605,6 +661,74 @@ fn display_screen(
     }
 
     unrendered_tetrominoes.append(rendered_tetrominoes);
+}
+
+fn move_to_built(
+    tetrominoes_list: &mut Vec<Tetromino>,
+    built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
+) {
+    let mut i = 0;
+    while i < tetrominoes_list.len() {
+        if tetrominoes_list[i].stationary {
+            let tetromino = tetrominoes_list.remove(i);
+
+            for character in tetromino.first.characters {
+                let x = character.x;
+                let y = character.y;
+                built_tetrominoes[y as usize][x as usize] = character;
+            }
+            for character in tetromino.second.characters {
+                let x = character.x;
+                let y = character.y;
+                built_tetrominoes[y as usize][x as usize] = character;
+            }
+            for character in tetromino.third.characters {
+                let x = character.x;
+                let y = character.y;
+                built_tetrominoes[y as usize][x as usize] = character;
+            }
+            for character in tetromino.fourth.characters {
+                let x = character.x;
+                let y = character.y;
+                built_tetrominoes[y as usize][x as usize] = character;
+            }
+        } else {
+            i += 1;
+        }
+    }
+}
+fn check_complete_line(built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT]) -> bool {
+    let mut complete_line = true;
+    for i in 0..HEIGHT {
+        complete_line = true;
+        for j in 0..WIDTH {
+            if built_tetrominoes[i][j].value != "[ ]" {
+                complete_line = false;
+                break;
+            }
+        }
+        if complete_line {
+            // Clear the current line
+            for j in 0..WIDTH {
+                built_tetrominoes[i][j] = TetrominoCharacter::default();
+            }
+
+            // Shift all rows above the current line down by one
+            for k in (1..=i).rev() {
+                for j in 0..WIDTH {
+                    built_tetrominoes[k][j] = built_tetrominoes[k - 1][j];
+                    // Move character down by one row
+                    built_tetrominoes[k][j].move_character(0, 1);
+                }
+            }
+
+            // Clear the top row since it has been shifted down
+            for j in 0..WIDTH {
+                built_tetrominoes[0][j] = TetrominoCharacter::default();
+            }
+        }
+    }
+    complete_line
 }
 
 fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
