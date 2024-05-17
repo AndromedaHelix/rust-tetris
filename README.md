@@ -1,6 +1,8 @@
 # Rust Tetris
 
-Tetris port to learn rust easily
+Tetris game rewritten in Rust.
+
+Originally made to grasp the basics of Rust programming language.
 
 # Authors
 
