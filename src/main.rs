@@ -713,7 +713,7 @@ fn check_complete_line(built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEI
                 built_tetrominoes[i][j] = TetrominoCharacter::default();
             }
 
-            // Shift all rows above the current line down by one
+            // Shift all rows above the current line down by one row
             for k in (1..=i).rev() {
                 for j in 0..WIDTH {
                     built_tetrominoes[k][j] = built_tetrominoes[k - 1][j];
