@@ -104,10 +104,10 @@ impl Line {
 }
 
 struct Tetromino {
-    first: Line,
-    second: Line,
-    third: Line,
-    fourth: Line,
+    first_line: Line,
+    second_line: Line,
+    third_line: Line,
+    fourth_line: Line,
     multi_line: bool,
     rotation: i32,
     shape_type: i32,
@@ -117,11 +117,11 @@ struct Tetromino {
 impl Tetromino {
     fn new(first_line: Line, second_line: Line, multiple_line: bool, shape_type: i32) -> Tetromino {
         Tetromino {
-            first: first_line,
-            second: second_line,
+            first_line,
+            second_line,
             multi_line: multiple_line,
-            third: Line::new(0, 0, 0),
-            fourth: Line::new(0, 0, 0),
+            third_line: Line::new(0, 0, 0),
+            fourth_line: Line::new(0, 0, 0),
             rotation: 0,
             shape_type,
             stationary: false,
@@ -140,14 +140,21 @@ impl Tetromino {
             return;
         }
 
+        let collides_horizontal = self.collides_horizontal(x_units);
+
         if collides {
             self.stationary = true;
-        } else {
-            self.first.move_line(x_units, y_units);
-            self.second.move_line(x_units, y_units);
-            self.third.move_line(x_units, y_units);
-            self.fourth.move_line(x_units, y_units);
+            return;
         }
+
+        if collides_horizontal {
+            return;
+        }
+
+        self.first_line.move_line(x_units, y_units);
+        self.second_line.move_line(x_units, y_units);
+        self.third_line.move_line(x_units, y_units);
+        self.fourth_line.move_line(x_units, y_units);
     }
 
     fn blank_tetromino(x_position: i32) -> Tetromino {
@@ -169,14 +176,14 @@ impl Tetromino {
         // Iterates through the y axis
         for y in 1..game_borders.len() - 1 {
             // Checks if the fourth line is empty (as it is not always used)
-            if !self.fourth.to_string().is_empty() {
+            if !self.fourth_line.to_string().is_empty() {
                 // Iterates through the characters of the fourth line's characters
-                for character in &self.fourth.characters {
+                for character in &self.fourth_line.characters {
                     // Iterates through the x axis
                     for x in 1..game_borders[y].len() {
                         // Checks if the characters X coordinate is the same as the game border's X coordinate, and if the game border at the fourth line's Y coordinate is true
                         if character.x == x as i32
-                            && game_borders[(self.fourth.y + 1) as usize][x] == true
+                            && game_borders[(self.fourth_line.y + 1) as usize][x] == true
                         {
                             // collides is set to true
                             collides = true;
@@ -187,11 +194,11 @@ impl Tetromino {
             }
 
             // Apply the same process for the rest of the lines
-            if !self.third.to_string().is_empty() {
-                for character in &self.third.characters {
+            if !self.third_line.to_string().is_empty() {
+                for character in &self.third_line.characters {
                     for x in 1..game_borders[y].len() {
                         if character.x == x as i32
-                            && game_borders[(self.third.y + 1) as usize][x] == true
+                            && game_borders[(self.third_line.y + 1) as usize][x] == true
                         {
                             collides = true;
                             return collides;
@@ -200,11 +207,11 @@ impl Tetromino {
                 }
             }
 
-            if !self.second.to_string().is_empty() {
-                for character in &self.second.characters {
+            if !self.second_line.to_string().is_empty() {
+                for character in &self.second_line.characters {
                     for x in 1..game_borders[y].len() {
                         if character.x == x as i32
-                            && game_borders[(self.second.y + 1) as usize][x] == true
+                            && game_borders[(self.second_line.y + 1) as usize][x] == true
                         {
                             collides = true;
                             return collides;
@@ -214,10 +221,10 @@ impl Tetromino {
             }
 
             // As the first line is always used, skip the check if it is empty
-            for character in &self.first.characters {
+            for character in &self.first_line.characters {
                 for x in 1..game_borders[y].len() {
                     if character.x == x as i32
-                        && game_borders[(self.first.y + 1) as usize][x] == true
+                        && game_borders[(self.first_line.y + 1) as usize][x] == true
                     {
                         collides = true;
                         return collides;
@@ -229,11 +236,39 @@ impl Tetromino {
         return collides;
     }
 
+    fn collides_horizontal(&mut self, x_units: i32) -> bool {
+        let lines_array = [
+            &self.first_line,
+            &self.second_line,
+            &self.third_line,
+            &self.fourth_line,
+        ];
+
+        let max = lines_array
+            .iter()
+            .enumerate()
+            .max_by_key(|&(_, line)| line.characters.len())
+            .map(|(index, _)| index)
+            .unwrap_or(0);
+
+        let mut collides_horizontal = false;
+
+        if let Some(line) = lines_array.get(max) {
+            if line.x + x_units < 1
+                || line.x + x_units > WIDTH as i32 - 1 - line.characters.len() as i32
+            {
+                collides_horizontal = true;
+            }
+        }
+
+        collides_horizontal
+    }
+
     fn clear(&mut self) {
-        self.first.characters.clear();
-        self.second.characters.clear();
-        self.third.characters.clear();
-        self.fourth.characters.clear();
+        self.first_line.characters.clear();
+        self.second_line.characters.clear();
+        self.third_line.characters.clear();
+        self.fourth_line.characters.clear();
     }
 
     fn rotate(&mut self, rotation: i32, game_borders: &mut [[bool; WIDTH]; HEIGHT + 1]) {
@@ -265,6 +300,11 @@ impl Tetromino {
             self.rotation = past_rotation;
             self.rotate_shape(self.rotation);
         }
+
+        if self.collides_horizontal(0) {
+            self.rotation = past_rotation;
+            self.rotate_shape(self.rotation);
+        }
     }
 
     fn rotate_shape(&mut self, rotation: i32) {
@@ -273,31 +313,31 @@ impl Tetromino {
                 1 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x, self.first.y + 1, 1);
-                    self.third = Line::new(self.first.x, self.first.y + 2, 1);
-                    self.fourth = Line::new(self.first.x, self.first.y + 3, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x, self.first_line.y + 1, 1);
+                    self.third_line = Line::new(self.first_line.x, self.first_line.y + 2, 1);
+                    self.fourth_line = Line::new(self.first_line.x, self.first_line.y + 3, 1);
                 }
                 2 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 2);
-                    self.second = Line::new(self.first.x, self.first.y + 1, 1);
-                    self.third = Line::new(self.first.x, self.first.y + 2, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 2);
+                    self.second_line = Line::new(self.first_line.x, self.first_line.y + 1, 1);
+                    self.third_line = Line::new(self.first_line.x, self.first_line.y + 2, 1);
                 }
                 4 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x - 1, self.first.y + 1, 2);
-                    self.third = Line::new(self.first.x - 1, self.first.y + 2, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x - 1, self.first_line.y + 1, 2);
+                    self.third_line = Line::new(self.first_line.x - 1, self.first_line.y + 2, 1);
                 }
                 5 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x + 1, self.first.y, 1);
-                    self.second = Line::new(self.first.x, self.first.y + 1, 2);
-                    self.third = Line::new(self.first.x, self.first.y + 2, 1);
+                    self.first_line = Line::new(self.first_line.x + 1, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x, self.first_line.y + 1, 2);
+                    self.third_line = Line::new(self.first_line.x, self.first_line.y + 2, 1);
                 }
                 _ => {}
             },
@@ -305,25 +345,25 @@ impl Tetromino {
                 1 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 4);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 4);
                 }
                 2 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x, self.first.y + 1, 3);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x, self.first_line.y + 1, 3);
                 }
                 4 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 2);
-                    self.second = Line::new(self.first.x + 1, self.first.y + 1, 2);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 2);
+                    self.second_line = Line::new(self.first_line.x + 1, self.first_line.y + 1, 2);
                 }
                 5 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x - 1, self.first.y + 1, 3);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x - 1, self.first_line.y + 1, 3);
                 }
                 _ => {}
             },
@@ -331,36 +371,36 @@ impl Tetromino {
                 1 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x, self.first.y + 1, 1);
-                    self.third = Line::new(self.first.x, self.first.y + 2, 1);
-                    self.fourth = Line::new(self.first.x, self.first.y + 3, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x, self.first_line.y + 1, 1);
+                    self.third_line = Line::new(self.first_line.x, self.first_line.y + 2, 1);
+                    self.fourth_line = Line::new(self.first_line.x, self.first_line.y + 3, 1);
                 }
                 2 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x, self.first.y + 1, 1);
-                    self.third = Line::new(self.first.x, self.first.y + 2, 2);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x, self.first_line.y + 1, 1);
+                    self.third_line = Line::new(self.first_line.x, self.first_line.y + 2, 2);
                 }
                 4 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x - 1, self.first.y + 1, 2);
-                    self.third = Line::new(self.first.x - 1, self.first.y + 2, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x - 1, self.first_line.y + 1, 2);
+                    self.third_line = Line::new(self.first_line.x - 1, self.first_line.y + 2, 1);
                 }
                 5 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
-                    self.second = Line::new(self.first.x - 1, self.first.y + 1, 2);
-                    self.third = Line::new(self.first.x, self.first.y + 2, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 1);
+                    self.second_line = Line::new(self.first_line.x - 1, self.first_line.y + 1, 2);
+                    self.third_line = Line::new(self.first_line.x, self.first_line.y + 2, 1);
 
-                    self.second.x = self.first.x - 1;
-                    self.second.y = self.first.y + 1;
-                    self.third.x = self.first.x;
-                    self.third.y = self.first.y + 2;
+                    self.second_line.x = self.first_line.x - 1;
+                    self.second_line.y = self.first_line.y + 1;
+                    self.third_line.x = self.first_line.x;
+                    self.third_line.y = self.first_line.y + 2;
                 }
                 _ => {}
             },
@@ -368,25 +408,25 @@ impl Tetromino {
                 1 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 4);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 4);
                 }
                 2 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 3);
-                    self.second = Line::new(self.first.x + 2, self.first.y + 1, 1);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 3);
+                    self.second_line = Line::new(self.first_line.x + 2, self.first_line.y + 1, 1);
                 }
                 4 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 2);
-                    self.second = Line::new(self.first.x + 1, self.first.y + 1, 2);
+                    self.first_line = Line::new(self.first_line.x, self.first_line.y, 2);
+                    self.second_line = Line::new(self.first_line.x + 1, self.first_line.y + 1, 2);
                 }
                 5 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x - 1, self.first.y, 3);
-                    self.second = Line::new(self.first.x + 1, self.first.y + 1, 1);
+                    self.first_line = Line::new(self.first_line.x - 1, self.first_line.y, 3);
+                    self.second_line = Line::new(self.first_line.x + 1, self.first_line.y + 1, 1);
                 }
                 _ => {}
             },
@@ -563,16 +603,17 @@ fn display_screen(
             while !unrendered_tetrominoes.is_empty() && x < unrendered_tetrominoes.len() {
                 let tetromino = &unrendered_tetrominoes[x];
 
-                let skip_distance_first = (tetromino.first.characters.len()) as usize;
-                let skip_distance_second = (tetromino.second.characters.len()) as usize;
+                let skip_distance_first = (tetromino.first_line.characters.len()) as usize;
+                let skip_distance_second = (tetromino.second_line.characters.len()) as usize;
 
-                let skip_distance_third = (tetromino.third.characters.len()) as usize;
+                let skip_distance_third = (tetromino.third_line.characters.len()) as usize;
 
-                let skip_distance_fourth = (tetromino.fourth.characters.len()) as usize;
+                let skip_distance_fourth = (tetromino.fourth_line.characters.len()) as usize;
 
                 if tetromino.rotation == 0 || tetromino.shape_type == 3 {
-                    if tetromino.first.x as usize == j && tetromino.first.y as usize == i {
-                        write!(stdout, "{}", tetromino.first).unwrap();
+                    if tetromino.first_line.x as usize == j && tetromino.first_line.y as usize == i
+                    {
+                        write!(stdout, "{}", tetromino.first_line).unwrap();
                         j += skip_distance_first;
                         found_tetromino = true;
                         if tetromino.multi_line == false {
@@ -580,18 +621,20 @@ fn display_screen(
                         }
                         break;
                     } else if tetromino.multi_line == true
-                        && (tetromino.second.x as usize == j && tetromino.second.y as usize == i)
+                        && (tetromino.second_line.x as usize == j
+                            && tetromino.second_line.y as usize == i)
                     {
                         found_tetromino = true;
                         j += skip_distance_second;
-                        write!(stdout, "{}", tetromino.second).unwrap();
+                        write!(stdout, "{}", tetromino.second_line).unwrap();
                         rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
                         break;
                     }
                 } else {
-                    if tetromino.first.x as usize == j && tetromino.first.y as usize == i {
+                    if tetromino.first_line.x as usize == j && tetromino.first_line.y as usize == i
+                    {
                         if tetromino.shape_type == 1 && tetromino.rotation == 180 {
-                            write!(stdout, "{}", tetromino.first).unwrap();
+                            write!(stdout, "{}", tetromino.first_line).unwrap();
                             stdout.flush().unwrap();
 
                             j += skip_distance_first;
@@ -601,25 +644,29 @@ fn display_screen(
                             }
                             break;
                         } else {
-                            write!(stdout, "{}", tetromino.first).unwrap();
+                            write!(stdout, "{}", tetromino.first_line).unwrap();
                             stdout.flush().unwrap();
                             j += skip_distance_first;
                             found_tetromino = true;
                             break;
                         }
-                    } else if tetromino.second.x as usize == j && tetromino.second.y as usize == i {
+                    } else if tetromino.second_line.x as usize == j
+                        && tetromino.second_line.y as usize == i
+                    {
                         found_tetromino = true;
                         j += skip_distance_second;
-                        write!(stdout, "{}", tetromino.second).unwrap();
+                        write!(stdout, "{}", tetromino.second_line).unwrap();
                         stdout.flush().unwrap();
                         break;
-                    } else if tetromino.third.x as usize == j && tetromino.third.y as usize == i {
-                        if tetromino.third.to_string().is_empty() {
+                    } else if tetromino.third_line.x as usize == j
+                        && tetromino.third_line.y as usize == i
+                    {
+                        if tetromino.third_line.to_string().is_empty() {
                             break;
                         } else {
                             found_tetromino = true;
                             j += skip_distance_third;
-                            write!(stdout, "{}", tetromino.third).unwrap();
+                            write!(stdout, "{}", tetromino.third_line).unwrap();
                             stdout.flush().unwrap();
                             if tetromino.shape_type != 1 {
                                 rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
@@ -627,12 +674,12 @@ fn display_screen(
                             break;
                         }
                     } else if tetromino.shape_type == 1
-                        && tetromino.fourth.x as usize == j
-                        && tetromino.fourth.y as usize == i
+                        && tetromino.fourth_line.x as usize == j
+                        && tetromino.fourth_line.y as usize == i
                     {
                         found_tetromino = true;
                         j += skip_distance_fourth;
-                        write!(stdout, "{}", tetromino.fourth).unwrap();
+                        write!(stdout, "{}", tetromino.fourth_line).unwrap();
                         stdout.flush().unwrap();
                         rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
                         break;
@@ -662,22 +709,22 @@ fn move_to_built(
         if tetrominoes_list[i].stationary {
             let tetromino = tetrominoes_list.remove(i);
 
-            for character in tetromino.first.characters {
+            for character in tetromino.first_line.characters {
                 let x = character.x;
                 let y = character.y;
                 built_tetrominoes[y as usize][x as usize] = character;
             }
-            for character in tetromino.second.characters {
+            for character in tetromino.second_line.characters {
                 let x = character.x;
                 let y = character.y;
                 built_tetrominoes[y as usize][x as usize] = character;
             }
-            for character in tetromino.third.characters {
+            for character in tetromino.third_line.characters {
                 let x = character.x;
                 let y = character.y;
                 built_tetrominoes[y as usize][x as usize] = character;
             }
-            for character in tetromino.fourth.characters {
+            for character in tetromino.fourth_line.characters {
                 let x = character.x;
                 let y = character.y;
                 built_tetrominoes[y as usize][x as usize] = character;
@@ -758,43 +805,43 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
 
     match random_number {
         1 => {
-            tetromino_shape.first.characters =
-                Line::create_characters(x_position, tetromino_shape.first.y, 4);
+            tetromino_shape.first_line.characters =
+                Line::create_characters(x_position, tetromino_shape.first_line.y, 4);
             tetromino_shape.shape_type = 1;
         }
         2 => {
-            tetromino_shape.first.characters =
-                Line::create_characters(x_position, tetromino_shape.first.y, 3);
-            tetromino_shape.second.characters =
-                Line::create_characters(x_position + 2, tetromino_shape.first.y + 1, 1);
-            tetromino_shape.second.x = x_position + 2;
+            tetromino_shape.first_line.characters =
+                Line::create_characters(x_position, tetromino_shape.first_line.y, 3);
+            tetromino_shape.second_line.characters =
+                Line::create_characters(x_position + 2, tetromino_shape.first_line.y + 1, 1);
+            tetromino_shape.second_line.x = x_position + 2;
             tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 2;
         }
         3 => {
-            tetromino_shape.first.characters =
-                Line::create_characters(x_position, tetromino_shape.first.y, 2);
-            tetromino_shape.second.characters =
-                Line::create_characters(x_position, tetromino_shape.first.y + 1, 2);
-            tetromino_shape.second.x = x_position;
+            tetromino_shape.first_line.characters =
+                Line::create_characters(x_position, tetromino_shape.first_line.y, 2);
+            tetromino_shape.second_line.characters =
+                Line::create_characters(x_position, tetromino_shape.first_line.y + 1, 2);
+            tetromino_shape.second_line.x = x_position;
             tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 3;
         }
         4 => {
-            tetromino_shape.first.characters =
-                Line::create_characters(x_position, tetromino_shape.first.y, 2);
-            tetromino_shape.second.characters =
-                Line::create_characters(x_position + 1, tetromino_shape.first.y + 1, 2);
-            tetromino_shape.second.x = x_position + 1;
+            tetromino_shape.first_line.characters =
+                Line::create_characters(x_position, tetromino_shape.first_line.y, 2);
+            tetromino_shape.second_line.characters =
+                Line::create_characters(x_position + 1, tetromino_shape.first_line.y + 1, 2);
+            tetromino_shape.second_line.x = x_position + 1;
             tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 4;
         }
         5 => {
-            tetromino_shape.first.characters =
-                Line::create_characters(x_position, tetromino_shape.first.y, 3);
-            tetromino_shape.second.characters =
-                Line::create_characters(x_position + 1, tetromino_shape.first.y + 1, 1);
-            tetromino_shape.second.x = x_position + 1;
+            tetromino_shape.first_line.characters =
+                Line::create_characters(x_position, tetromino_shape.first_line.y, 3);
+            tetromino_shape.second_line.characters =
+                Line::create_characters(x_position + 1, tetromino_shape.first_line.y + 1, 1);
+            tetromino_shape.second_line.x = x_position + 1;
             tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 5;
         }
