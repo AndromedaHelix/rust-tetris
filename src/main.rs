@@ -5,8 +5,6 @@ use std::io::Read;
 
 extern crate termion;
 use std::io::{stdout, Write};
-use std::process::exit;
-use std::ptr::null;
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear};
 
@@ -139,7 +137,7 @@ impl Tetromino {
         if collides {
             self.stationary = true;
 
-            self.remake_gameborders(game_borders);
+            //self.remake_gameborders(game_borders);
         } else {
             self.first.move_line(x_units, y_units);
             self.second.move_line(x_units, y_units);
@@ -527,14 +525,9 @@ fn main() {
         );
         move_to_built(&mut unrendered_tetrominoes_list, &mut built_tetrominoes);
 
-        check_complete_line(&mut stdout, &mut built_tetrominoes);
-        // let x = check_complete_line(&mut stdout, &mut built_tetrominoes);
+        check_complete_line(&mut built_tetrominoes);
 
-        // if x == true {
-        //     exit(1);
-        // }
-
-        //writeln!(stdout, "Complete : {}", x).unwrap();
+        remake_gameborders(&mut game_borders, &mut built_tetrominoes);
 
         stdout.flush().unwrap();
     }
@@ -698,10 +691,8 @@ fn move_to_built(
         }
     }
 }
-fn check_complete_line(
-    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
-    built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
-) -> bool {
+
+fn check_complete_line(built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT]) -> bool {
     let mut complete_line = true;
     for i in 0..HEIGHT {
         complete_line = true;
@@ -734,6 +725,21 @@ fn check_complete_line(
         }
     }
     complete_line
+}
+
+fn remake_gameborders(
+    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
+    built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
+) {
+    for i in 0..HEIGHT {
+        for j in 0..WIDTH {
+            if built_tetrominoes[i][j].value.is_empty() {
+                game_borders[i][j] = false;
+            } else {
+                game_borders[i][j] = true;
+            }
+        }
+    }
 }
 
 fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
