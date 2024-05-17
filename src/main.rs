@@ -317,7 +317,7 @@ impl Tetromino {
                 5 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 1);
+                    self.first = Line::new(self.first.x + 1, self.first.y, 1);
                     self.second = Line::new(self.first.x, self.first.y + 1, 2);
                     self.third = Line::new(self.first.x, self.first.y + 2, 1);
                 }
@@ -407,7 +407,7 @@ impl Tetromino {
                 5 => {
                     self.clear();
 
-                    self.first = Line::new(self.first.x, self.first.y, 3);
+                    self.first = Line::new(self.first.x - 1, self.first.y, 3);
                     self.second = Line::new(self.first.x + 1, self.first.y + 1, 1);
                 }
                 _ => {}
@@ -459,7 +459,7 @@ fn main() {
     );
 
     loop {
-        write!(stdout, "{}", termion::clear::CurrentLine).unwrap();
+        //write!(stdout, "{}", termion::clear::CurrentLine).unwrap();
 
         let b = stdin.next();
 
@@ -527,13 +527,14 @@ fn main() {
         );
         move_to_built(&mut unrendered_tetrominoes_list, &mut built_tetrominoes);
 
-        let x = check_complete_line(&mut built_tetrominoes);
+        check_complete_line(&mut stdout, &mut built_tetrominoes);
+        // let x = check_complete_line(&mut stdout, &mut built_tetrominoes);
 
-        if x == true {
-            exit(1);
-        }
+        // if x == true {
+        //     exit(1);
+        // }
 
-        writeln!(stdout, "Complete : {}", x).unwrap();
+        //writeln!(stdout, "Complete : {}", x).unwrap();
 
         stdout.flush().unwrap();
     }
@@ -556,7 +557,7 @@ fn display_screen(
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
     built_tetroinoes: &[[TetrominoCharacter; WIDTH]; HEIGHT],
 ) {
-    writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
+    // writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
 
     for i in 0..HEIGHT {
         let mut j = 0;
@@ -697,16 +698,20 @@ fn move_to_built(
         }
     }
 }
-fn check_complete_line(built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT]) -> bool {
+fn check_complete_line(
+    stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
+    built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
+) -> bool {
     let mut complete_line = true;
     for i in 0..HEIGHT {
         complete_line = true;
-        for j in 0..WIDTH {
-            if built_tetrominoes[i][j].value != "[ ]" {
+        for j in 1..WIDTH - 1 {
+            if built_tetrominoes[i][j].value.is_empty() {
                 complete_line = false;
                 break;
             }
         }
+
         if complete_line {
             // Clear the current line
             for j in 0..WIDTH {
