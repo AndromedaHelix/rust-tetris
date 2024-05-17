@@ -6,6 +6,6 @@ Originally made to grasp the basics of Rust programming language.
 
 ## Contributors
 
-<a href="https://github.com/VOLTEC6647/Voltec-2024/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Voltec6647/Voltec-2024" />
+<a href="https://github.com/AndromedaHelix/rust-tetris/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=AndromedaHelix/rust-tetris" />
 </a>
