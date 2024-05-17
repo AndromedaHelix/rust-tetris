@@ -1,4 +1,14 @@
-/* Written by Juan Pablo Gutiérrez */
+/*
+
+__          __   _ _   _               _                  _                     _____      _     _          _____       _   _
+\ \        / /  (_) | | |             | |                | |                   |  __ \    | |   | |        / ____|     | | (_)
+ \ \  /\  / / __ _| |_| |_ ___ _ __   | |__  _   _       | |_   _  __ _ _ __   | |__) |_ _| |__ | | ___   | |  __ _   _| |_ _  ___ _ __ _ __ ___ ____
+  \ \/  \/ / '__| | __| __/ _ \ '_ \  | '_ \| | | |  _   | | | | |/ _` | '_ \  |  ___/ _` | '_ \| |/ _ \  | | |_ | | | | __| |/ _ \ '__| '__/ _ \_  /
+   \  /\  /| |  | | |_| ||  __/ | | | | |_) | |_| | | |__| | |_| | (_| | | | | | |  | (_| | |_) | | (_) | | |__| | |_| | |_| |  __/ |  | | |  __// /
+    \/  \/ |_|  |_|\__|\__\___|_| |_| |_.__/ \__, |  \____/ \__,_|\__,_|_| |_| |_|   \__,_|_.__/|_|\___/   \_____|\__,_|\__|_|\___|_|  |_|  \___/___|
+                                              __/ |
+                                             |___/
+ */
 
 use rand::Rng;
 use std::io::Read;
@@ -132,8 +142,6 @@ impl Tetromino {
 
         if collides {
             self.stationary = true;
-
-            //self.remake_gameborders(game_borders);
         } else {
             self.first.move_line(x_units, y_units);
             self.second.move_line(x_units, y_units);
@@ -419,6 +427,8 @@ fn main() {
 
     let mut movement_counter = 1;
 
+    let mut score: u32 = 0;
+
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
     display_screen(
         &screen,
@@ -426,10 +436,11 @@ fn main() {
         &mut rendered_tetrominoes_list,
         &mut stdout,
         &built_tetrominoes,
+        score,
     );
 
     loop {
-        //write!(stdout, "{}", termion::clear::CurrentLine).unwrap();
+        write!(stdout, "{}", termion::clear::CurrentLine).unwrap();
 
         let b = stdin.next();
 
@@ -445,6 +456,7 @@ fn main() {
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
                 &built_tetrominoes,
+                score,
             );
         }
         if let Some(Ok(b'd')) = b {
@@ -455,6 +467,7 @@ fn main() {
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
                 &built_tetrominoes,
+                score,
             );
         }
         if let Some(Ok(b'r')) = b {
@@ -465,6 +478,7 @@ fn main() {
                 &mut rendered_tetrominoes_list,
                 &mut stdout,
                 &built_tetrominoes,
+                score,
             );
         }
 
@@ -494,10 +508,12 @@ fn main() {
             &mut rendered_tetrominoes_list,
             &mut stdout,
             &built_tetrominoes,
+            score,
         );
+
         move_to_built(&mut unrendered_tetrominoes_list, &mut built_tetrominoes);
 
-        check_complete_line(&mut built_tetrominoes);
+        check_complete_line(&mut built_tetrominoes, &mut score);
 
         remake_gameborders(&mut game_borders, &mut built_tetrominoes);
 
@@ -521,8 +537,13 @@ fn display_screen(
     rendered_tetrominoes: &mut Vec<Tetromino>,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
     built_tetroinoes: &[[TetrominoCharacter; WIDTH]; HEIGHT],
+    score: u32,
 ) {
-    // writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
+    writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
+
+    writeln!(stdout, "Score: {}", score).unwrap();
+
+    write!(stdout, "\n\r").unwrap();
 
     for i in 0..HEIGHT {
         let mut j = 0;
@@ -530,7 +551,10 @@ fn display_screen(
             let mut found_tetromino = false;
             let mut x = 0;
 
-            if built_tetroinoes[i][j].x == j as i32 && built_tetroinoes[i][j].y == i as i32 {
+            if built_tetroinoes[i][j].x == j as i32
+                && built_tetroinoes[i][j].y == i as i32
+                && !built_tetroinoes[i][j].value.is_empty()
+            {
                 write!(stdout, "{}", built_tetroinoes[i][j].value).unwrap();
                 j += 1;
                 continue;
@@ -664,18 +688,27 @@ fn move_to_built(
     }
 }
 
-fn check_complete_line(built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT]) -> bool {
-    let mut complete_line = true;
+fn check_complete_line(
+    built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
+    score: &mut u32,
+) -> bool {
+    let mut complete_line = false;
+    let mut lines_cleared = 0;
+
     for i in 0..HEIGHT {
-        complete_line = true;
+        let mut line_is_complete = true;
+
         for j in 1..WIDTH - 1 {
             if built_tetrominoes[i][j].value.is_empty() {
-                complete_line = false;
+                line_is_complete = false;
                 break;
             }
         }
 
-        if complete_line {
+        if line_is_complete {
+            complete_line = true;
+            lines_cleared += 1;
+
             // Clear the current line
             for j in 0..WIDTH {
                 built_tetrominoes[i][j] = TetrominoCharacter::default();
@@ -696,6 +729,10 @@ fn check_complete_line(built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEI
             }
         }
     }
+
+    // Update score based on the number of lines cleared
+    *score += lines_cleared * 100;
+
     complete_line
 }
 
@@ -784,7 +821,6 @@ fn rotate_tetrominoes(
 ) {
     for tetromino in tetrominoes_list {
         tetromino.rotate(rotation, game_borders);
-        print!("{}", tetromino.rotation.to_string());
     }
 }
 
