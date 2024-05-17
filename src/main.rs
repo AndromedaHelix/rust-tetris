@@ -76,11 +76,7 @@ impl Line {
         let mut characters: Vec<TetrominoCharacter> = Vec::new();
 
         for i in 0..num {
-            characters.push(TetrominoCharacter {
-                x: x_pos + i,
-                y: y_pos,
-                value: "[ ]",
-            });
+            characters.push(TetrominoCharacter::new(x_pos + i, y_pos, "[ ]"));
         }
 
         characters
@@ -223,30 +219,6 @@ impl Tetromino {
         }
 
         return collides;
-    }
-
-    fn remake_gameborders(&mut self, game_borders: &mut [[bool; WIDTH]; HEIGHT + 1]) {
-        if !self.fourth.to_string().is_empty() {
-            for fourth_character in &self.fourth.characters {
-                game_borders[fourth_character.y as usize][fourth_character.x as usize] = true;
-            }
-        }
-
-        if !self.third.to_string().is_empty() {
-            for third_character in &self.third.characters {
-                game_borders[third_character.y as usize][third_character.x as usize] = true;
-            }
-        }
-
-        if !self.second.to_string().is_empty() {
-            for second_character in &self.second.characters {
-                game_borders[second_character.y as usize][second_character.x as usize] = true;
-            }
-        }
-
-        for first_character in &self.first.characters {
-            game_borders[first_character.y as usize][first_character.x as usize] = true;
-        }
     }
 
     fn clear(&mut self) {
