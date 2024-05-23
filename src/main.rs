@@ -108,18 +108,16 @@ struct Tetromino {
     second_line: Line,
     third_line: Line,
     fourth_line: Line,
-    multi_line: bool,
     rotation: i32,
     shape_type: i32,
     stationary: bool,
 }
 
 impl Tetromino {
-    fn new(first_line: Line, second_line: Line, multiple_line: bool, shape_type: i32) -> Tetromino {
+    fn new(first_line: Line, second_line: Line, shape_type: i32) -> Tetromino {
         Tetromino {
             first_line,
             second_line,
-            multi_line: multiple_line,
             third_line: Line::new(0, 0, 0),
             fourth_line: Line::new(0, 0, 0),
             rotation: 0,
@@ -158,7 +156,7 @@ impl Tetromino {
     }
 
     fn blank_tetromino(x_position: i32) -> Tetromino {
-        Tetromino::new(Line::new(x_position, 1, 0), Line::new(0, 2, 0), false, 0)
+        Tetromino::new(Line::new(x_position, 1, 0), Line::new(0, 2, 0), 0)
     }
 
     /// Checks if the tetromino collides with the game borders
@@ -610,80 +608,50 @@ fn display_screen(
 
                 let skip_distance_fourth = (tetromino.fourth_line.characters.len()) as usize;
 
-                if tetromino.rotation == 0 || tetromino.shape_type == 3 {
-                    if tetromino.first_line.x as usize == j && tetromino.first_line.y as usize == i
-                    {
-                        write!(stdout, "{}", tetromino.first_line).unwrap();
-                        j += skip_distance_first;
-                        found_tetromino = true;
-                        if tetromino.multi_line == false {
-                            rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                        }
-                        break;
-                    } else if tetromino.multi_line == true
-                        && (tetromino.second_line.x as usize == j
-                            && tetromino.second_line.y as usize == i)
-                    {
-                        found_tetromino = true;
-                        j += skip_distance_second;
-                        write!(stdout, "{}", tetromino.second_line).unwrap();
+                if tetromino.first_line.x as usize == j && tetromino.first_line.y as usize == i {
+                    write!(stdout, "{}", tetromino.first_line).unwrap();
+                    stdout.flush().unwrap();
+                    j += skip_distance_first;
+                    found_tetromino = true;
+                    if tetromino.second_line.to_string().is_empty() {
                         rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                        break;
                     }
-                } else {
-                    if tetromino.first_line.x as usize == j && tetromino.first_line.y as usize == i
-                    {
-                        if tetromino.shape_type == 1 && tetromino.rotation == 180 {
-                            write!(stdout, "{}", tetromino.first_line).unwrap();
-                            stdout.flush().unwrap();
-
-                            j += skip_distance_first;
-                            found_tetromino = true;
-                            if tetromino.multi_line == false {
-                                rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                            }
-                            break;
-                        } else {
-                            write!(stdout, "{}", tetromino.first_line).unwrap();
-                            stdout.flush().unwrap();
-                            j += skip_distance_first;
-                            found_tetromino = true;
-                            break;
-                        }
-                    } else if tetromino.second_line.x as usize == j
-                        && tetromino.second_line.y as usize == i
-                    {
-                        found_tetromino = true;
-                        j += skip_distance_second;
-                        write!(stdout, "{}", tetromino.second_line).unwrap();
-                        stdout.flush().unwrap();
-                        break;
-                    } else if tetromino.third_line.x as usize == j
-                        && tetromino.third_line.y as usize == i
-                    {
-                        if tetromino.third_line.to_string().is_empty() {
-                            break;
-                        } else {
-                            found_tetromino = true;
-                            j += skip_distance_third;
-                            write!(stdout, "{}", tetromino.third_line).unwrap();
-                            stdout.flush().unwrap();
-                            if tetromino.shape_type != 1 {
-                                rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                            }
-                            break;
-                        }
-                    } else if tetromino.shape_type == 1
-                        && tetromino.fourth_line.x as usize == j
-                        && tetromino.fourth_line.y as usize == i
-                    {
-                        found_tetromino = true;
-                        j += skip_distance_fourth;
-                        write!(stdout, "{}", tetromino.fourth_line).unwrap();
-                        stdout.flush().unwrap();
+                    break;
+                } else if tetromino.second_line.x as usize == j
+                    && tetromino.second_line.y as usize == i
+                    && !tetromino.second_line.to_string().is_empty()
+                {
+                    found_tetromino = true;
+                    j += skip_distance_second;
+                    write!(stdout, "{}", tetromino.second_line).unwrap();
+                    stdout.flush().unwrap();
+                    if tetromino.third_line.to_string().is_empty() {
                         rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                        break;
                     }
+                    break;
+                } else if tetromino.third_line.x as usize == j
+                    && tetromino.third_line.y as usize == i
+                    && !tetromino.third_line.to_string().is_empty()
+                {
+                    found_tetromino = true;
+                    j += skip_distance_third;
+                    write!(stdout, "{}", tetromino.third_line).unwrap();
+                    stdout.flush().unwrap();
+                    if tetromino.fourth_line.to_string().is_empty() {
+                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
+                    }
+                    break;
+                } else if tetromino.shape_type == 1
+                    && tetromino.fourth_line.x as usize == j
+                    && tetromino.fourth_line.y as usize == i
+                    && !tetromino.fourth_line.to_string().is_empty()
+                {
+                    found_tetromino = true;
+                    j += skip_distance_fourth;
+                    write!(stdout, "{}", tetromino.fourth_line).unwrap();
+                    stdout.flush().unwrap();
+                    rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
+                    break;
                 }
 
                 x += 1;
@@ -815,7 +783,6 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
             tetromino_shape.second_line.characters =
                 Line::create_characters(x_position + 2, tetromino_shape.first_line.y + 1, 1);
             tetromino_shape.second_line.x = x_position + 2;
-            tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 2;
         }
         3 => {
@@ -824,7 +791,6 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
             tetromino_shape.second_line.characters =
                 Line::create_characters(x_position, tetromino_shape.first_line.y + 1, 2);
             tetromino_shape.second_line.x = x_position;
-            tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 3;
         }
         4 => {
@@ -833,7 +799,6 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
             tetromino_shape.second_line.characters =
                 Line::create_characters(x_position + 1, tetromino_shape.first_line.y + 1, 2);
             tetromino_shape.second_line.x = x_position + 1;
-            tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 4;
         }
         5 => {
@@ -842,7 +807,6 @@ fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
             tetromino_shape.second_line.characters =
                 Line::create_characters(x_position + 1, tetromino_shape.first_line.y + 1, 1);
             tetromino_shape.second_line.x = x_position + 1;
-            tetromino_shape.multi_line = true;
             tetromino_shape.shape_type = 5;
         }
         _ => panic!("Invalid tetromino shape"),
