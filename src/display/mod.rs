@@ -28,7 +28,7 @@ pub fn display_screen(
 ) {
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
 
-    writeln!(stdout, "Score: {}", score).unwrap();
+    writeln!(stdout, "{} Score: {}", termion::cursor::Goto(12,0), score).unwrap();
 
     write!(stdout, "\n\r").unwrap();
 

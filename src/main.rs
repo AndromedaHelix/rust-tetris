@@ -19,10 +19,10 @@ use termion::{async_stdin, clear};
 
 mod display;
 
-use rust_tetris::{run, GameConfig};
-use rust_tetris::tetromino::tetromino::Tetromino;
-use rust_tetris::tetromino::characters::TetrominoCharacter;
 use rust_tetris::tetromino;
+use rust_tetris::tetromino::characters::TetrominoCharacter;
+use rust_tetris::tetromino::tetromino::Tetromino;
+use rust_tetris::{run, GameConfig};
 
 const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
