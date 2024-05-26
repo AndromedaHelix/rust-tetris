@@ -1,6 +1,7 @@
 const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
 
+use std::io;
 use std::io::Bytes;
 
 extern crate termion;
@@ -9,6 +10,8 @@ use termion::AsyncReader;
 
 use std::thread;
 use std::time::Duration;
+
+use std::sync::mpsc;
 
 pub mod tetromino;
 
@@ -29,7 +32,6 @@ pub struct GameConfig<'a> {
 
 pub fn run(mut game_config: GameConfig) {
     let mut score: u32 = 0;
-    let mut movement_counter = 1;
 
     display::display_screen(
         &game_config.screen,
@@ -39,6 +41,23 @@ pub fn run(mut game_config: GameConfig) {
         &game_config.built_tetrominoes,
         score,
     );
+
+    let (tx, rx) = mpsc::channel();
+    let mut movement_counter: i32 = 1;
+
+    // Spanws a thread that handles updating movement_counters and sends
+    // true when the tetromino's y position should go down by one following the game logic
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_millis(100));
+
+        if movement_counter % 2 == 0 {
+            tx.send(true).unwrap();
+        } else {
+            tx.send(false).unwrap();
+        }
+
+        movement_counter += 1;
+    });
 
     loop {
         write!(game_config.stdout, "{}", termion::clear::CurrentLine).unwrap();
@@ -94,8 +113,7 @@ pub fn run(mut game_config: GameConfig) {
                 score,
             );
         }
-
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(50));
 
         let mut create: bool = true;
 
@@ -110,13 +128,12 @@ pub fn run(mut game_config: GameConfig) {
             tetromino::create_tetronimo(&mut game_config.unrendered_tetrominoes_list);
         }
 
-        if movement_counter % 2 == 0 {
+        if rx.recv() == Ok(true) {
             tetromino::update_tetrominoes(
                 &mut game_config.unrendered_tetrominoes_list,
                 &mut game_config.game_borders,
             );
         }
-        movement_counter += 1;
 
         display::display_screen(
             &game_config.screen,
