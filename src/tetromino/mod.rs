@@ -60,11 +60,12 @@ pub fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
 
 pub fn move_tetrmonioes(
     tetrominoes_list: &mut Vec<Tetromino>,
-    movement: i32,
+    x_movement: i32,
+    y_movement: i32,
     game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
 ) {
     for tetromino in tetrominoes_list {
-        tetromino.move_tetromino(movement, 0, game_borders);
+        tetromino.move_tetromino(x_movement, y_movement, game_borders);
     }
 }
 

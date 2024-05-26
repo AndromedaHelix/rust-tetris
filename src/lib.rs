@@ -70,6 +70,7 @@ pub fn run(mut game_config: GameConfig) {
             tetromino::move_tetrmonioes(
                 &mut game_config.unrendered_tetrominoes_list,
                 -1,
+                0,
                 &mut game_config.game_borders,
             );
 
@@ -86,6 +87,7 @@ pub fn run(mut game_config: GameConfig) {
             tetromino::move_tetrmonioes(
                 &mut game_config.unrendered_tetrominoes_list,
                 1,
+                0,
                 &mut game_config.game_borders,
             );
             display::display_screen(
@@ -112,7 +114,23 @@ pub fn run(mut game_config: GameConfig) {
                 score,
             );
         }
-        thread::sleep(Duration::from_millis(50));
+        if let Some(Ok(b's')) = b {
+            tetromino::move_tetrmonioes(
+                &mut game_config.unrendered_tetrominoes_list,
+                0,
+                1,
+                &mut game_config.game_borders,
+            );
+            display::display_screen(
+                &game_config.screen,
+                &mut game_config.unrendered_tetrominoes_list,
+                &mut game_config.rendered_tetrominoes_list,
+                &mut game_config.stdout,
+                &game_config.built_tetrominoes,
+                score,
+            );
+        }
+        thread::sleep(Duration::from_millis(1));
 
         let mut create: bool = true;
 
