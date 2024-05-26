@@ -5,7 +5,7 @@ use std::io::Bytes;
 
 extern crate termion;
 use std::io::Write;
-use termion::{async_stdin, clear, AsyncReader};
+use termion::AsyncReader;
 
 use std::thread;
 use std::time::Duration;
