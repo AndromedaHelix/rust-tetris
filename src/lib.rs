@@ -1,7 +1,6 @@
 const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
 
-use std::io;
 use std::io::Bytes;
 
 extern crate termion;
