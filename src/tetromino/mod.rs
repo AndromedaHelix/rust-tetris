@@ -7,7 +7,6 @@ use self::tetromino::Tetromino;
 use rand::Rng;
 
 const WIDTH: usize = 12; // 2 more to account for the borders
-const HEIGHT: usize = 40;
 
 pub fn create_tetronimo(current_tetromino: &mut Tetromino) {
     let random_number: i32 = random_tetronimo();
