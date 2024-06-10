@@ -17,12 +17,10 @@ use std::io::{stdout, Write};
 use termion::raw::IntoRawMode;
 use termion::{async_stdin, clear};
 
-mod display;
-
 use rust_tetris::tetromino;
 use rust_tetris::tetromino::characters::TetrominoCharacter;
 use rust_tetris::tetromino::tetromino::Tetromino;
-use rust_tetris::{run, GameConfig};
+use rust_tetris::{display, run, GameConfig};
 
 const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
@@ -31,8 +29,7 @@ const HEIGHT: usize = 40;
 
 fn main() {
     let mut screen: [[&str; WIDTH]; HEIGHT] = [[""; WIDTH]; HEIGHT];
-    let rendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
-    let mut unrendered_tetrominoes_list: Vec<Tetromino> = Vec::new();
+    let mut unrendered_tetrominoes_list: Tetromino = Tetromino::blank_tetromino(0);
 
     let mut game_borders: [[bool; WIDTH]; HEIGHT + 1] = [[false; WIDTH]; HEIGHT + 1];
     for x in 0..WIDTH {
@@ -61,8 +58,7 @@ fn main() {
 
     let game_config = GameConfig {
         screen,
-        rendered_tetrominoes_list,
-        unrendered_tetrominoes_list,
+        current_tetromino: unrendered_tetrominoes_list,
         game_borders,
         built_tetrominoes,
         stdout,

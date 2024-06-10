@@ -5,9 +5,15 @@ use termion::clear;
 const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
 
+use crate::move_to_built;
 use crate::Tetromino;
 use crate::TetrominoCharacter;
 
+/// Adds the scrren elements to the screen array
+///
+/// # Arguments
+///
+/// * `screen` - An array representing the screen instelf
 pub fn create_screen(screen: &mut [[&str; WIDTH]; HEIGHT]) {
     for i in 0..HEIGHT {
         screen[i][0] = "<!";
@@ -20,15 +26,14 @@ pub fn create_screen(screen: &mut [[&str; WIDTH]; HEIGHT]) {
 
 pub fn display_screen(
     screen: &[[&str; WIDTH]; HEIGHT],
-    unrendered_tetrominoes: &mut Vec<Tetromino>,
-    rendered_tetrominoes: &mut Vec<Tetromino>,
+    current_tetromino: &mut Tetromino,
     stdout: &mut termion::raw::RawTerminal<std::io::Stdout>,
-    built_tetroinoes: &[[TetrominoCharacter; WIDTH]; HEIGHT],
+    built_tetroinoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
     score: u32,
 ) {
     writeln!(stdout, "{}{}", clear::All, termion::cursor::Hide).unwrap();
 
-    writeln!(stdout, "{} Score: {}", termion::cursor::Goto(12,0), score).unwrap();
+    writeln!(stdout, "{} Score: {}", termion::cursor::Goto(12, 0), score).unwrap();
 
     write!(stdout, "\n\r").unwrap();
 
@@ -36,7 +41,6 @@ pub fn display_screen(
         let mut j = 0;
         while j < WIDTH {
             let mut found_tetromino = false;
-            let mut x = 0;
 
             if built_tetroinoes[i][j].x == j as i32
                 && built_tetroinoes[i][j].y == i as i32
@@ -47,63 +51,55 @@ pub fn display_screen(
                 continue;
             }
 
-            while !unrendered_tetrominoes.is_empty() && x < unrendered_tetrominoes.len() {
-                let tetromino = &unrendered_tetrominoes[x];
+            let skip_distance_first = (current_tetromino.first_line.characters.len()) as usize;
+            let skip_distance_second = (current_tetromino.second_line.characters.len()) as usize;
 
-                let skip_distance_first = (tetromino.first_line.characters.len()) as usize;
-                let skip_distance_second = (tetromino.second_line.characters.len()) as usize;
+            let skip_distance_third = (current_tetromino.third_line.characters.len()) as usize;
 
-                let skip_distance_third = (tetromino.third_line.characters.len()) as usize;
+            let skip_distance_fourth = (current_tetromino.fourth_line.characters.len()) as usize;
 
-                let skip_distance_fourth = (tetromino.fourth_line.characters.len()) as usize;
-
-                if tetromino.first_line.x as usize == j && tetromino.first_line.y as usize == i {
-                    write!(stdout, "{}", tetromino.first_line).unwrap();
-                    stdout.flush().unwrap();
-                    j += skip_distance_first;
-                    found_tetromino = true;
-                    if tetromino.second_line.to_string().is_empty() {
-                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                    }
-                    break;
-                } else if tetromino.second_line.x as usize == j
-                    && tetromino.second_line.y as usize == i
-                    && !tetromino.second_line.to_string().is_empty()
-                {
-                    found_tetromino = true;
-                    j += skip_distance_second;
-                    write!(stdout, "{}", tetromino.second_line).unwrap();
-                    stdout.flush().unwrap();
-                    if tetromino.third_line.to_string().is_empty() {
-                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                    }
-                    break;
-                } else if tetromino.third_line.x as usize == j
-                    && tetromino.third_line.y as usize == i
-                    && !tetromino.third_line.to_string().is_empty()
-                {
-                    found_tetromino = true;
-                    j += skip_distance_third;
-                    write!(stdout, "{}", tetromino.third_line).unwrap();
-                    stdout.flush().unwrap();
-                    if tetromino.fourth_line.to_string().is_empty() {
-                        rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                    }
-                    break;
-                } else if tetromino.shape_type == 1
-                    && tetromino.fourth_line.x as usize == j
-                    && tetromino.fourth_line.y as usize == i
-                    && !tetromino.fourth_line.to_string().is_empty()
-                {
-                    found_tetromino = true;
-                    j += skip_distance_fourth;
-                    write!(stdout, "{}", tetromino.fourth_line).unwrap();
-                    stdout.flush().unwrap();
-                    rendered_tetrominoes.push(unrendered_tetrominoes.remove(x));
-                    break;
+            if current_tetromino.first_line.x as usize == j
+                && current_tetromino.first_line.y as usize == i
+            {
+                write!(stdout, "{}", current_tetromino.first_line).unwrap();
+                stdout.flush().unwrap();
+                j += skip_distance_first;
+                found_tetromino = true;
+                if current_tetromino.second_line.to_string().is_empty() {
+                    move_to_built(current_tetromino, built_tetroinoes);
                 }
-
-                x += 1;
+            } else if current_tetromino.second_line.x as usize == j
+                && current_tetromino.second_line.y as usize == i
+                && !current_tetromino.second_line.to_string().is_empty()
+            {
+                found_tetromino = true;
+                j += skip_distance_second;
+                write!(stdout, "{}", current_tetromino.second_line).unwrap();
+                stdout.flush().unwrap();
+                if current_tetromino.third_line.to_string().is_empty() {
+                    move_to_built(current_tetromino, built_tetroinoes);
+                }
+            } else if current_tetromino.third_line.x as usize == j
+                && current_tetromino.third_line.y as usize == i
+                && !current_tetromino.third_line.to_string().is_empty()
+            {
+                found_tetromino = true;
+                j += skip_distance_third;
+                write!(stdout, "{}", current_tetromino.third_line).unwrap();
+                stdout.flush().unwrap();
+                if current_tetromino.fourth_line.to_string().is_empty() {
+                    move_to_built(current_tetromino, built_tetroinoes);
+                }
+            } else if current_tetromino.shape_type == 1
+                && current_tetromino.fourth_line.x as usize == j
+                && current_tetromino.fourth_line.y as usize == i
+                && !current_tetromino.fourth_line.to_string().is_empty()
+            {
+                found_tetromino = true;
+                j += skip_distance_fourth;
+                write!(stdout, "{}", current_tetromino.fourth_line).unwrap();
+                stdout.flush().unwrap();
+                move_to_built(current_tetromino, built_tetroinoes);
             }
 
             if !found_tetromino {
@@ -113,6 +109,4 @@ pub fn display_screen(
         }
         write!(stdout, "\n\r").unwrap();
     }
-
-    unrendered_tetrominoes.append(rendered_tetrominoes);
 }

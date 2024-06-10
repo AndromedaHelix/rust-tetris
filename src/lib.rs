@@ -17,12 +17,11 @@ pub mod tetromino;
 use crate::tetromino::characters::TetrominoCharacter;
 use crate::tetromino::tetromino::Tetromino;
 
-mod display;
+pub mod display;
 
 pub struct GameConfig<'a> {
     pub screen: [[&'a str; WIDTH]; HEIGHT],
-    pub rendered_tetrominoes_list: Vec<Tetromino>,
-    pub unrendered_tetrominoes_list: Vec<Tetromino>,
+    pub current_tetromino: Tetromino,
     pub game_borders: [[bool; WIDTH]; HEIGHT + 1],
     pub built_tetrominoes: [[TetrominoCharacter; WIDTH]; HEIGHT],
     pub stdout: termion::raw::RawTerminal<std::io::Stdout>,
@@ -34,10 +33,9 @@ pub fn run(mut game_config: GameConfig) {
 
     display::display_screen(
         &game_config.screen,
-        &mut game_config.unrendered_tetrominoes_list,
-        &mut game_config.rendered_tetrominoes_list,
+        &mut game_config.current_tetromino,
         &mut game_config.stdout,
-        &game_config.built_tetrominoes,
+        &mut game_config.built_tetrominoes,
         score,
     );
 
@@ -67,102 +65,79 @@ pub fn run(mut game_config: GameConfig) {
             break;
         }
         if let Some(Ok(b'a')) = b {
-            tetromino::move_tetrmonioes(
-                &mut game_config.unrendered_tetrominoes_list,
-                -1,
-                0,
-                &mut game_config.game_borders,
-            );
+            game_config
+                .current_tetromino
+                .move_tetromino(-1, 0, &mut game_config.game_borders);
 
             display::display_screen(
                 &game_config.screen,
-                &mut game_config.unrendered_tetrominoes_list,
-                &mut game_config.rendered_tetrominoes_list,
+                &mut game_config.current_tetromino,
                 &mut game_config.stdout,
-                &game_config.built_tetrominoes,
+                &mut game_config.built_tetrominoes,
                 score,
             );
         }
         if let Some(Ok(b'd')) = b {
-            tetromino::move_tetrmonioes(
-                &mut game_config.unrendered_tetrominoes_list,
-                1,
-                0,
-                &mut game_config.game_borders,
-            );
+            game_config
+                .current_tetromino
+                .move_tetromino(1, 0, &mut game_config.game_borders);
+
             display::display_screen(
                 &game_config.screen,
-                &mut game_config.unrendered_tetrominoes_list,
-                &mut game_config.rendered_tetrominoes_list,
+                &mut game_config.current_tetromino,
                 &mut game_config.stdout,
-                &game_config.built_tetrominoes,
+                &mut game_config.built_tetrominoes,
                 score,
             );
         }
         if let Some(Ok(b'r')) = b {
-            tetromino::rotate_tetrominoes(
-                &mut game_config.unrendered_tetrominoes_list,
-                90,
-                &mut game_config.game_borders,
-            );
+            game_config
+                .current_tetromino
+                .rotate(90, &mut game_config.game_borders);
+
             display::display_screen(
                 &game_config.screen,
-                &mut game_config.unrendered_tetrominoes_list,
-                &mut game_config.rendered_tetrominoes_list,
+                &mut game_config.current_tetromino,
                 &mut game_config.stdout,
-                &game_config.built_tetrominoes,
+                &mut game_config.built_tetrominoes,
                 score,
             );
         }
         if let Some(Ok(b's')) = b {
-            tetromino::move_tetrmonioes(
-                &mut game_config.unrendered_tetrominoes_list,
-                0,
-                1,
-                &mut game_config.game_borders,
-            );
+            game_config
+                .current_tetromino
+                .move_tetromino(0, 1, &mut game_config.game_borders);
+
             display::display_screen(
                 &game_config.screen,
-                &mut game_config.unrendered_tetrominoes_list,
-                &mut game_config.rendered_tetrominoes_list,
+                &mut game_config.current_tetromino,
                 &mut game_config.stdout,
-                &game_config.built_tetrominoes,
+                &mut game_config.built_tetrominoes,
                 score,
             );
         }
         thread::sleep(Duration::from_millis(1));
 
-        let mut create: bool = true;
-
-        for tetromino in &game_config.unrendered_tetrominoes_list {
-            if !tetromino.stationary {
-                create = false;
-                break;
-            }
-        }
-
-        if create {
-            tetromino::create_tetronimo(&mut game_config.unrendered_tetrominoes_list);
+        if game_config.current_tetromino.stationary {
+            tetromino::create_tetronimo(&mut game_config.current_tetromino);
         }
 
         if rx.recv() == Ok(true) {
-            tetromino::update_tetrominoes(
-                &mut game_config.unrendered_tetrominoes_list,
-                &mut game_config.game_borders,
-            );
+            game_config
+                .current_tetromino
+                .move_tetromino(0, 1, &mut game_config.game_borders);
         }
 
         display::display_screen(
             &game_config.screen,
-            &mut game_config.unrendered_tetrominoes_list,
-            &mut game_config.rendered_tetrominoes_list,
+            &mut game_config.current_tetromino,
             &mut game_config.stdout,
-            &game_config.built_tetrominoes,
+            &mut game_config.built_tetrominoes,
             score,
         );
 
         move_to_built(
-            &mut game_config.unrendered_tetrominoes_list,
+            &mut game_config.current_tetromino,
             &mut game_config.built_tetrominoes,
         );
 
@@ -177,37 +152,30 @@ pub fn run(mut game_config: GameConfig) {
     }
 }
 
-fn move_to_built(
-    tetrominoes_list: &mut Vec<Tetromino>,
+pub fn move_to_built(
+    tetromino: &mut Tetromino,
     built_tetrominoes: &mut [[TetrominoCharacter; WIDTH]; HEIGHT],
 ) {
-    let mut i = 0;
-    while i < tetrominoes_list.len() {
-        if tetrominoes_list[i].stationary {
-            let tetromino = tetrominoes_list.remove(i);
-
-            for character in tetromino.first_line.characters {
-                let x = character.x;
-                let y = character.y;
-                built_tetrominoes[y as usize][x as usize] = character;
-            }
-            for character in tetromino.second_line.characters {
-                let x = character.x;
-                let y = character.y;
-                built_tetrominoes[y as usize][x as usize] = character;
-            }
-            for character in tetromino.third_line.characters {
-                let x = character.x;
-                let y = character.y;
-                built_tetrominoes[y as usize][x as usize] = character;
-            }
-            for character in tetromino.fourth_line.characters {
-                let x = character.x;
-                let y = character.y;
-                built_tetrominoes[y as usize][x as usize] = character;
-            }
-        } else {
-            i += 1;
+    if tetromino.stationary {
+        for character in &tetromino.first_line.characters {
+            let x = character.x;
+            let y = character.y;
+            built_tetrominoes[y as usize][x as usize] = *character;
+        }
+        for character in &tetromino.second_line.characters {
+            let x = character.x;
+            let y = character.y;
+            built_tetrominoes[y as usize][x as usize] = *character;
+        }
+        for character in &tetromino.third_line.characters {
+            let x = character.x;
+            let y = character.y;
+            built_tetrominoes[y as usize][x as usize] = *character;
+        }
+        for character in &tetromino.fourth_line.characters {
+            let x = character.x;
+            let y = character.y;
+            built_tetrominoes[y as usize][x as usize] = *character;
         }
     }
 }

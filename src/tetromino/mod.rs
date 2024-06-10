@@ -9,7 +9,7 @@ use rand::Rng;
 const WIDTH: usize = 12; // 2 more to account for the borders
 const HEIGHT: usize = 40;
 
-pub fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
+pub fn create_tetronimo(current_tetromino: &mut Tetromino) {
     let random_number: i32 = random_tetronimo();
     let x_position: i32 = random_tetromino_position();
     let mut tetromino_shape: Tetromino = Tetromino::blank_tetromino(x_position);
@@ -55,37 +55,7 @@ pub fn create_tetronimo(tetrominoes_list: &mut Vec<Tetromino>) {
         _ => panic!("Invalid tetromino shape"),
     }
 
-    tetrominoes_list.push(tetromino_shape);
-}
-
-pub fn move_tetrmonioes(
-    tetrominoes_list: &mut Vec<Tetromino>,
-    x_movement: i32,
-    y_movement: i32,
-    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
-) {
-    for tetromino in tetrominoes_list {
-        tetromino.move_tetromino(x_movement, y_movement, game_borders);
-    }
-}
-
-pub fn rotate_tetrominoes(
-    tetrominoes_list: &mut Vec<Tetromino>,
-    rotation: i32,
-    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
-) {
-    for tetromino in tetrominoes_list {
-        tetromino.rotate(rotation, game_borders);
-    }
-}
-
-pub fn update_tetrominoes(
-    tetrominoes_list: &mut Vec<Tetromino>,
-    game_borders: &mut [[bool; WIDTH]; HEIGHT + 1],
-) {
-    for tetromino in tetrominoes_list {
-        tetromino.move_tetromino(0, 1, game_borders);
-    }
+    *current_tetromino = tetromino_shape;
 }
 
 fn random_tetronimo() -> i32 {
